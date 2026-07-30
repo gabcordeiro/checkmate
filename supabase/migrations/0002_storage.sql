@@ -1,4 +1,4 @@
--- ChequeCerto — Storage das fotos dos cheques.
+-- Cheque Mate — Storage das fotos dos cheques.
 --
 -- Bucket PRIVADO "cheques". O app nunca serve URL pública: a tela do lote pede
 -- signed URLs de curta duração. O isolamento é por prefixo de pasta =

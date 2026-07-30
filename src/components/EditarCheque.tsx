@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import CaixaErro from './CaixaErro'
 import type { ChequeRow } from '@/lib/supabase/types'
 
 /**
@@ -261,11 +262,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
         Assinatura presente na foto
       </label>
 
-      {erro && (
-        <p className="mt-3 rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm text-devolve-text">
-          {erro}
-        </p>
-      )}
+      <CaixaErro mensagem={erro} className="mt-3" />
 
       <div className="mt-3 flex gap-2">
         <button type="submit" disabled={salvando} className="btn-primario px-3 py-1.5 text-xs">

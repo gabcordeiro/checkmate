@@ -9,8 +9,8 @@
 
 import { normalizarEmitente } from './format'
 import { cmc7Cru, montarCmc7Completo } from './validation/cmc7'
-import { validarCheque } from './validation'
-import type { ChequeExtraido, Confianca } from './validation/types'
+import { ordenarAlertas, statusDosAlertas, validarCheque } from './validation'
+import type { Alerta, ChequeExtraido, Confianca } from './validation/types'
 import type { ChequeRow } from './supabase/types'
 
 /** Campos que a operadora pode corrigir na tela. */
@@ -118,9 +118,16 @@ export function aplicarEdicao(base: ChequeExtraido, edicao: EdicaoCheque): Chequ
 /**
  * Colunas derivadas de um cheque extraído: o que a extração e a revisão manual
  * gravam. Uma função só, para os dois caminhos nunca divergirem.
+ *
+ * `alertasExtras` são avisos que não saem do conteúdo do cheque e sim das
+ * condições da leitura — hoje, foto abaixo da resolução recomendada. Entram na
+ * mesma lista e no mesmo cálculo de status: se a operadora escolheu seguir com
+ * uma foto ruim, o lote inteiro precisa carregar esse aviso, senão ele morre no
+ * clique e ninguém mais sabe.
  */
-export function colunasDoCheque(cheque: ChequeExtraido) {
+export function colunasDoCheque(cheque: ChequeExtraido, alertasExtras: Alerta[] = []) {
   const validacao = validarCheque(cheque)
+  const alertas = ordenarAlertas([...validacao.alertas, ...alertasExtras])
   const { bloco1, bloco2, bloco3 } = cheque.cmc7
 
   return {
@@ -150,7 +157,7 @@ export function colunasDoCheque(cheque: ChequeExtraido) {
     rasuras: cheque.rasuras_detectadas,
     confianca: cheque.confianca_por_campo,
     observacoes: cheque.observacoes,
-    status: validacao.status,
-    alertas: validacao.alertas,
+    status: statusDosAlertas(alertas),
+    alertas,
   }
 }

@@ -59,7 +59,8 @@ function normalizar(texto: string): string {
     .trim()
 }
 
-function statusDosAlertas(alertas: Alerta[]): StatusCheque {
+/** vermelho > amarelo > ok. Exportado porque a persistência também recalcula. */
+export function statusDosAlertas(alertas: Alerta[]): StatusCheque {
   if (alertas.some((a) => a.nivel === 'vermelho')) return 'vermelho'
   if (alertas.length > 0) return 'conferir'
   return 'ok'
@@ -471,7 +472,7 @@ function validarChecklistVisual(cheque: ChequeExtraido, alertas: Alerta[]): void
 // ---------------------------------------------------------------------------
 
 /** Ordem de exibição: vermelho primeiro, e dentro do nível a ordem de detecção. */
-function ordenarAlertas(alertas: Alerta[]): Alerta[] {
+export function ordenarAlertas(alertas: Alerta[]): Alerta[] {
   return [...alertas].sort((a, b) => {
     if (a.nivel === b.nivel) return 0
     return a.nivel === 'vermelho' ? -1 : 1

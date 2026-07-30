@@ -4,7 +4,7 @@ import { criarClienteServidor } from '@/lib/supabase/server'
 import { formatarDataBr } from '@/lib/validation/datas'
 import type { BatchRow } from '@/lib/supabase/types'
 
-export const metadata = { title: 'Lotes — ChequeCerto' }
+export const metadata = { title: 'Lotes — Cheque Mate' }
 
 /** Aceita "29/07/2026", "2026-07-29" e "29/07" (ano corrente). */
 function termoComoData(termo: string): string | null {

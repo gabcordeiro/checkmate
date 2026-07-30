@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import FormularioNovaSenha from '@/components/FormularioNovaSenha'
 import { criarClienteServidor, supabaseConfiguradoServidor } from '@/lib/supabase/server'
 
-export const metadata = { title: 'Nova senha — ChequeCerto' }
+export const metadata = { title: 'Nova senha — Cheque Mate' }
 
 // Página autenticada: nunca pode ser pré-renderizada em build.
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,7 @@ export default async function NovaSenhaPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-12">
       <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-        ChequeCerto
+        Cheque Mate
       </p>
       <h1 className="mt-2 text-2xl font-semibold">Definir senha</h1>
       <p className="mt-2 text-sm text-slate-600">

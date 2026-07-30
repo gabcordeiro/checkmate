@@ -1,4 +1,4 @@
--- ChequeCerto — schema inicial
+-- Cheque Mate — schema inicial
 -- Tabelas: profiles, batches, cheques. RLS obrigatório em todas.
 --
 -- Isolamento no MVP: cada usuário só vê os próprios lotes/cheques.

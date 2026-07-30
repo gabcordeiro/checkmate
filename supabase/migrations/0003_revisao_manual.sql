@@ -1,4 +1,4 @@
--- ChequeCerto — revisão manual do cheque.
+-- Cheque Mate — revisão manual do cheque.
 --
 -- A ferramenta é conferente: quando o modelo lê errado, quem corrige é a
 -- operadora, e a correção precisa RE-RODAR a validação (DV do CMC7, parser do

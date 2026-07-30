@@ -171,6 +171,36 @@ describe('revalidação depois da correção manual', () => {
     expect(depois.status).toBe('ok')
   })
 
+  it('alerta extra da foto ruim entra na lista e muda o status de ok para conferir', () => {
+    const alertaFoto = {
+      nivel: 'amarelo' as const,
+      codigo: 'foto_baixa_qualidade',
+      titulo: 'Lido de foto com baixa qualidade',
+      detalhe: 'Foto 620px no lado menor.',
+    }
+    const semAlerta = colunasDoCheque(linhaParaExtraido(linha()))
+    expect(semAlerta.status).toBe('ok')
+
+    const comFoto = colunasDoCheque(linhaParaExtraido(linha()), [alertaFoto])
+    expect(comFoto.status).toBe('conferir')
+    expect(comFoto.alertas.map((a) => a.codigo)).toEqual(['foto_baixa_qualidade'])
+  })
+
+  it('alerta extra não rebaixa um cheque que já está vermelho', () => {
+    const comAmbos = colunasDoCheque(linhaParaExtraido(linha({ assinatura_presente: false })), [
+      {
+        nivel: 'amarelo',
+        codigo: 'foto_baixa_qualidade',
+        titulo: 'Lido de foto com baixa qualidade',
+        detalhe: '',
+      },
+    ])
+    expect(comAmbos.status).toBe('vermelho')
+    // Vermelho primeiro, mesmo com o alerta extra sendo adicionado depois.
+    expect(comAmbos.alertas[0].nivel).toBe('vermelho')
+    expect(comAmbos.alertas.map((a) => a.codigo)).toContain('foto_baixa_qualidade')
+  })
+
   it('renormaliza a chave de agrupamento quando o emitente é corrigido', () => {
     const depois = colunasDoCheque(
       aplicarEdicao(linhaParaExtraido(linha()), { emitente: 'Márcia Lima & Cia' }),

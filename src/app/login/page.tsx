@@ -1,13 +1,13 @@
 import { Suspense } from 'react'
 import FormularioLogin from '@/components/FormularioLogin'
 
-export const metadata = { title: 'Entrar — ChequeCerto' }
+export const metadata = { title: 'Entrar — Cheque Mate' }
 
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-5 py-12">
       <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-        ChequeCerto
+        Cheque Mate
       </p>
 
       {/* O formulário lê a querystring (`proximo`, `erro`), então precisa de

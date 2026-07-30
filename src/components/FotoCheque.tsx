@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * A foto do cheque, em duas variantes:
@@ -9,7 +9,14 @@ import { useEffect, useState } from 'react'
  *
  * As duas abrem a mesma tela cheia com zoom, porque a conferência final é
  * visual: sem olhar a foto a operadora não confia no alerta.
+ *
+ * A tela cheia usa a transição "Modal open / close" do transitions.dev: abre
+ * escalando de 0.96, e no fechar mergulha de volta — o que exige manter o
+ * elemento montado durante o fechamento (`is-closing`) antes de remover.
  */
+
+const DURACAO_FECHAMENTO = 150
+
 export default function FotoCheque({
   url,
   legenda,
@@ -26,74 +33,106 @@ export default function FotoCheque({
 }) {
   const [abertaLocal, setAbertaLocal] = useState(false)
   const controlada = abertaControlada !== undefined
-  const aberta = controlada ? abertaControlada : abertaLocal
+  const querAberta = controlada ? Boolean(abertaControlada) : abertaLocal
 
-  function fechar() {
-    if (controlada) onFechar?.()
-    else setAbertaLocal(false)
-  }
+  // `montada` sobrevive ao pedido de fechar até a animação terminar.
+  const [montada, setMontada] = useState(querAberta)
+  const [fase, setFase] = useState<'entrando' | 'aberta' | 'fechando'>('entrando')
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const frame = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!aberta) return
+    if (timer.current) clearTimeout(timer.current)
+    if (frame.current) cancelAnimationFrame(frame.current)
+
+    if (querAberta) {
+      setMontada(true)
+      setFase('entrando')
+      // Um frame no estado inicial para o browser ter de onde animar.
+      frame.current = requestAnimationFrame(() => setFase('aberta'))
+      return
+    }
+
+    if (montada) {
+      setFase('fechando')
+      timer.current = setTimeout(() => setMontada(false), DURACAO_FECHAMENTO)
+    }
+    // `montada` de propósito fora das deps: incluí-lo reiniciaria o fechamento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [querAberta])
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current)
+      if (frame.current) cancelAnimationFrame(frame.current)
+    }
+  }, [])
+
+  const fechar = useCallback(() => {
+    if (controlada) onFechar?.()
+    else setAbertaLocal(false)
+  }, [controlada, onFechar])
+
+  useEffect(() => {
+    if (!montada) return
     const aoTeclar = (evento: KeyboardEvent) => {
       if (evento.key === 'Escape') {
         evento.stopPropagation()
-        if (controlada) onFechar?.()
-        else setAbertaLocal(false)
+        fechar()
       }
     }
     window.addEventListener('keydown', aoTeclar, true)
     return () => window.removeEventListener('keydown', aoTeclar, true)
-  }, [aberta, controlada, onFechar])
+  }, [montada, fechar])
 
-  const vazio = (
-    <div
-      className={
-        variante === 'painel'
-          ? 'flex h-64 w-full items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400'
-          : 'flex h-12 w-20 items-center justify-center rounded border border-dashed border-slate-300 text-[10px] text-slate-400'
-      }
-    >
-      sem foto
-    </div>
-  )
+  if (!url) {
+    return (
+      <div
+        className={
+          variante === 'painel'
+            ? 'flex h-64 w-full items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400'
+            : 'flex h-12 w-20 items-center justify-center rounded border border-dashed border-slate-300 text-[10px] text-slate-400'
+        }
+      >
+        sem foto
+      </div>
+    )
+  }
 
   return (
     <>
-      {!url ? (
-        vazio
-      ) : (
-        <button
-          type="button"
-          onClick={() => (controlada ? undefined : setAbertaLocal(true))}
+      <button
+        type="button"
+        onClick={() => (controlada ? undefined : setAbertaLocal(true))}
+        className={
+          variante === 'painel'
+            ? 'block w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100'
+            : 'group relative block h-12 w-20 shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100'
+        }
+        title="Ampliar a foto do cheque"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={`Foto do cheque ${legenda}`}
           className={
             variante === 'painel'
-              ? 'block w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100'
-              : 'group relative block h-12 w-20 shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100'
+              ? 'max-h-[46vh] w-full object-contain'
+              : 'h-full w-full object-cover transition-transform duration-200 group-hover:scale-105'
           }
-          title="Ampliar a foto do cheque"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt={`Foto do cheque ${legenda}`}
-            className={
-              variante === 'painel'
-                ? 'max-h-[46vh] w-full object-contain'
-                : 'h-full w-full object-cover transition group-hover:scale-105'
-            }
-            loading={variante === 'painel' ? 'eager' : 'lazy'}
-          />
-        </button>
-      )}
+          loading={variante === 'painel' ? 'eager' : 'lazy'}
+        />
+      </button>
 
-      {aberta && url && (
+      {montada && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`Foto do cheque ${legenda}`}
           onClick={fechar}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4"
+          className={`t-modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4 ${
+            fase === 'aberta' ? 'is-open' : fase === 'fechando' ? 'is-closing' : ''
+          }`}
         >
           <div className="max-h-full max-w-5xl overflow-auto" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}

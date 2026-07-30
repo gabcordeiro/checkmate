@@ -1,0 +1,320 @@
+/* ---------------------------------------------------------------------------
+   Transições — snippets de transitions.dev (https://transitions.dev/)
+   Copiados dos arquivos oficiais do skill `Jakubantalik/transitions.dev`,
+   mantendo os nomes semânticos das variáveis para poderem ser afinados.
+
+   Só entram transições que comunicam algo: o botão de copiar confirmando, a
+   foto ampliando, o formulário de correção abrindo, o cheque seguinte
+   chegando, o "lançado" marcando e o erro chamando atenção. Nada decorativo —
+   a operadora passa horas nesta tela.
+
+   O guard de `prefers-reduced-motion` é obrigatório em cada bloco.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Text states swap — "Copiar CMC7" → "Copiado ✓" */
+  --text-swap-dur: 150ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-in-out;
+
+  /* Modal open / close — foto do cheque em tela cheia */
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Panel reveal — formulário de correção.
+     O translate original é 100px, pensado para painel de tela inteira; aqui o
+     painel abre dentro da linha, então 14px é o equivalente proporcional. */
+  --panel-open-dur: 400ms;
+  --panel-close-dur: 350ms;
+  --panel-translate-y: 14px;
+  --panel-blur: 2px;
+  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Page side-by-side — avançar / voltar no modo conferência */
+  --page-slide-dur: 250ms;
+  --page-fade-dur: 250ms;
+  --page-slide-distance: 8px;
+  --page-blur: 3px;
+  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Number pop-in — o valor em risco do lote */
+  --digit-dur: 500ms;
+  --digit-distance: 8px;
+  --digit-stagger: 70ms;
+  --digit-blur: 2px;
+  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+
+  /* Checkbox check — marcar "lançado" */
+  --check-box: 150ms;
+  --check-draw: 350ms;
+  --check-delay: 0ms;
+  --check-uncheck: 150ms;
+  --check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Error state shake — alerta de erro entrando */
+  --shake-distance: 6px;
+  --shake-overshoot: 4px;
+  --shake-dur-a: 80ms;
+  --shake-dur-b: 60ms;
+  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Toast — confirmação do que foi copiado no modo conferência */
+  --toast-open: 350ms;
+  --toast-close: 250ms;
+  --toast-distance: 16px;
+  --toast-blur: 2px;
+  --toast-scale: 0.97;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Text states swap ─────────────────────────────────────────────────── */
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter var(--text-swap-dur) var(--text-swap-ease),
+    opacity var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap {
+    transition: none !important;
+  }
+}
+
+/* ── Modal open / close ───────────────────────────────────────────────── */
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-modal.is-closing {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity var(--modal-close-dur) var(--modal-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-modal {
+    transition: none !important;
+  }
+}
+
+/* ── Panel reveal ─────────────────────────────────────────────────────── */
+.t-panel-slide {
+  transform: translateY(var(--panel-translate-y));
+  opacity: 0;
+  filter: blur(var(--panel-blur));
+  pointer-events: none;
+  transition:
+    transform var(--panel-close-dur) var(--panel-ease),
+    opacity var(--panel-close-dur) var(--panel-ease),
+    filter var(--panel-close-dur) var(--panel-ease);
+  will-change: transform, opacity, filter;
+}
+.t-panel-slide[data-open='true'] {
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: auto;
+  transition:
+    transform var(--panel-open-dur) var(--panel-ease),
+    opacity var(--panel-open-dur) var(--panel-ease),
+    filter var(--panel-open-dur) var(--panel-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-panel-slide {
+    transition: none !important;
+  }
+}
+
+/* ── Page side-by-side ────────────────────────────────────────────────────
+   O original empilha duas páginas em absolute e alterna. Aqui o conteúdo tem
+   altura variável (um cheque pode ter 1 alerta ou 5), então empilhar cortaria
+   o card. A entrada usa os mesmos tokens e respeita a direção: avançando o
+   cheque entra pela direita, voltando entra pela esquerda. */
+@keyframes t-page-enter-x {
+  from {
+    opacity: 0;
+    transform: translateX(var(--t-page-from-x, 0));
+    filter: blur(var(--page-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+.t-page-enter {
+  animation: t-page-enter-x var(--page-slide-dur) var(--page-slide-ease) both;
+  will-change: opacity, transform, filter;
+}
+.t-page-enter[data-direcao='frente'] {
+  --t-page-from-x: var(--page-slide-distance);
+}
+.t-page-enter[data-direcao='tras'] {
+  --t-page-from-x: calc(var(--page-slide-distance) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-page-enter {
+    animation: none !important;
+  }
+}
+
+/* ── Number pop-in ────────────────────────────────────────────────────── */
+@keyframes t-digit-pop-in {
+  0% {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.t-digit-group {
+  display: inline-flex;
+  align-items: baseline;
+}
+.t-digit {
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+.t-digit-group.is-animating .t-digit {
+  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-digit-group .t-digit {
+    animation: none !important;
+  }
+}
+
+/* ── Checkbox check ───────────────────────────────────────────────────── */
+.t-check {
+  transition:
+    background var(--check-box) var(--check-ease),
+    border-color var(--check-box) var(--check-ease);
+}
+.t-check svg path {
+  stroke-dasharray: var(--check-len, 15);
+  stroke-dashoffset: var(--check-len, 15);
+  transition: stroke-dashoffset var(--check-uncheck) var(--check-ease);
+}
+.t-check[aria-checked='true'] svg path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--check-draw) var(--check-ease) var(--check-delay);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-check,
+  .t-check svg path {
+    transition: none !important;
+  }
+}
+
+/* ── Error state shake ────────────────────────────────────────────────────
+   Keyframe multi-segmento com easing por trecho. Os %-stops são as durações
+   cumulativas (80, 60, 80, 60 = 280ms): recalcular se mudar algum segmento. */
+.t-shake {
+  animation: t-input-shake calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
+}
+@keyframes t-input-shake {
+  0% {
+    transform: translateX(0);
+    animation-timing-function: var(--shake-ease);
+  }
+  28.57% {
+    transform: translateX(var(--shake-distance));
+    animation-timing-function: var(--shake-ease);
+  }
+  57.14% {
+    transform: translateX(calc(var(--shake-distance) * -1));
+    animation-timing-function: var(--shake-ease);
+  }
+  78.57% {
+    transform: translateX(var(--shake-overshoot));
+    animation-timing-function: var(--shake-ease);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-shake {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ── Toast open / close ───────────────────────────────────────────────── */
+.t-toast {
+  opacity: 0;
+  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--toast-blur));
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease);
+  will-change: opacity, transform, filter;
+}
+.t-toast.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-toast {
+    transition: none !important;
+  }
+}

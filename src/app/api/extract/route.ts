@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { criarClienteServidor } from '@/lib/supabase/server'
 import { colunasDoCheque } from '@/lib/cheque'
+import { LADO_MINIMO } from '@/lib/imagem'
+import type { Alerta } from '@/lib/validation/types'
 import { ErroVisao, extrairChequesDaImagem } from '@/lib/vision'
 
 /**
@@ -29,11 +31,30 @@ export async function POST(request: NextRequest) {
   const corpo = (await request.json().catch(() => null)) as {
     batch_id?: string
     storage_path?: string
+    /** A operadora foi avisada da baixa resolução e escolheu seguir. */
+    foto_baixa_qualidade?: boolean
+    lado_menor?: number
   } | null
 
   const batchId = corpo?.batch_id
   const storagePath = corpo?.storage_path
   if (!batchId || !storagePath) return erro('batch_id e storage_path são obrigatórios.', 400)
+
+  // O aviso da foto ruim acompanha todos os cheques dela: sem isso ele morre no
+  // clique de "seguir mesmo assim" e ninguém mais sabe de onde a leitura saiu.
+  const alertasDaFoto: Alerta[] = []
+  if (corpo?.foto_baixa_qualidade) {
+    const medida =
+      typeof corpo.lado_menor === 'number' && Number.isFinite(corpo.lado_menor)
+        ? `${Math.round(corpo.lado_menor)}px no lado menor, abaixo dos ${LADO_MINIMO}px recomendados`
+        : `abaixo dos ${LADO_MINIMO}px recomendados no lado menor`
+    alertasDaFoto.push({
+      nivel: 'amarelo',
+      codigo: 'foto_baixa_qualidade',
+      titulo: 'Lido de foto com baixa qualidade',
+      detalhe: `Foto ${medida}. A leitura pode estar afetada — confira campo por campo na foto antes de lançar.`,
+    })
+  }
 
   // O caminho tem de estar dentro da pasta do próprio usuário — a policy de
   // Storage já garante, mas checar aqui evita uma chamada inútil.
@@ -71,7 +92,7 @@ export async function POST(request: NextRequest) {
     batch_id: batchId,
     owner_id: user.id,
     storage_path: storagePath,
-    ...colunasDoCheque(cheque),
+    ...colunasDoCheque(cheque, alertasDaFoto),
   }))
 
   const { data: inseridos, error: erroInsert } = await supabase

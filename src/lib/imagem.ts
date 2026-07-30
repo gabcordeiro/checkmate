@@ -1,10 +1,12 @@
 /**
  * Pré-processamento das fotos no navegador. Roda só no client.
  *
- * A regra mais importante do produto está aqui: foto com menos de 1000px no
- * lado menor é REJEITADA. Não é limitação, é feature — nenhum modelo recupera
- * pixel que não existe, e um CMC7 chutado a partir de foto de 400px custa mais
- * caro que refotografar.
+ * Foto com menos de 1000px no lado menor não tem os pixels do CMC7, e nenhum
+ * modelo recupera pixel que não existe. Mas quem decide é a operadora: o app
+ * AVISA e oferece as duas saídas — mandar outra foto ou seguir mesmo assim.
+ * Quando ela segue, o aviso não morre no clique: vira alerta amarelo em todos
+ * os cheques daquela foto, para quem olhar o lote depois saber que a leitura
+ * saiu de uma imagem ruim.
  */
 
 export const LADO_MINIMO = 1000
@@ -13,7 +15,10 @@ export const LADO_MINIMO = 1000
 export const LADO_MAXIMO = 2400
 
 export const MENSAGEM_FOTO_PEQUENA =
-  'Foto pequena demais para leitura confiável. Fotografe 1 cheque por vez, preenchendo a tela, com boa luz.'
+  'Cheque com baixa qualidade — a análise pode acabar sendo afetada. Enviar outra foto ou seguir mesmo assim?'
+
+export const DICA_FOTO =
+  'Fotografe 1 cheque por vez, preenchendo a tela, com boa luz e a tarja do CMC7 nítida.'
 
 export interface Dimensoes {
   largura: number
@@ -38,6 +43,11 @@ export async function lerDimensoes(arquivo: File): Promise<Dimensoes | null> {
 
 export function ladoMenor(dimensoes: Dimensoes): number {
   return Math.min(dimensoes.largura, dimensoes.altura)
+}
+
+export function fotoAbaixoDoMinimo(dimensoes: Dimensoes | null | undefined): boolean {
+  if (!dimensoes) return false
+  return ladoMenor(dimensoes) < LADO_MINIMO
 }
 
 export interface ImagemPreparada {

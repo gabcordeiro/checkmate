@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ChequeCerto — conferência de cheques pré-datados',
+  title: 'Cheque Mate — conferência de cheques pré-datados',
   description:
     'Leia o CMC7, organize o lote por emitente e pegue os erros que fazem o banco devolver o cheque, antes de lançar no sistema.',
 }

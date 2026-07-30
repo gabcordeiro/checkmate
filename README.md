@@ -1,4 +1,4 @@
-# ChequeCerto
+# Cheque Mate
 
 Conferência de lotes de cheques pré-datados para securitizadora/factoring.
 
@@ -29,7 +29,7 @@ O MatchCV chama a **API do Groq** com `fetch` puro (sem SDK), modelo
 a `GROQ_API_KEY` fica só no servidor. (O projeto também tem um `GEMINI_API_KEY` nos secrets,
 mas ele não é usado por nenhum código do repositório.)
 
-O ChequeCerto **replica o padrão** — `fetch` puro, sem SDK, chave só no servidor, saída
+O Cheque Mate **replica o padrão** — `fetch` puro, sem SDK, chave só no servidor, saída
 estruturada em vez de parsing de texto livre — mas **troca o modelo**, porque
 `llama-3.3-70b-versatile` é texto-only e aqui o modelo precisa ver a imagem:
 
@@ -129,6 +129,30 @@ npm run typecheck
 npm run build
 ```
 
+### Animações
+
+Os snippets vêm de [transitions.dev](https://transitions.dev/), copiados dos arquivos oficiais
+do skill `Jakubantalik/transitions.dev` para `src/app/transitions.css` com os nomes semânticos
+das variáveis preservados (então dá para afinar duração/distância num lugar só). Cada bloco
+mantém o guard de `prefers-reduced-motion`, obrigatório.
+
+Só entrou transição que comunica algo, porque a operadora passa horas nesta tela:
+
+| Transição | Onde | Por quê |
+| --- | --- | --- |
+| Text states swap | botão de copiar | é a ação mais repetida do app; a troca "Copiar CMC7" → "Copiado ✓" é o que confirma que o clique pegou |
+| Modal open / close | foto em tela cheia | a foto é "por cima" da página, não ancorada num gatilho |
+| Panel reveal | formulário de correção | ele abre dentro da linha, então `--panel-translate-y` cai de 100px para 14px |
+| Page side-by-side | avançar/voltar no modo conferência | entrada direcional: avançando entra pela direita, voltando pela esquerda |
+| Checkbox check | marcar "lançado" | o traço sendo desenhado é a confirmação da marcação |
+| Error state shake | mensagens de erro | sacode de novo no mesmo erro repetido, que é quando a pessoa não viu na primeira |
+| Number pop-in | valor em risco do lote | só nesse número, que é o que precisa puxar a atenção |
+| Toast | confirmação de cópia no modo conferência | avisa sem roubar o foco do teclado |
+
+Detalhe que custou um bug: `.t-check` tem de ficar no **mesmo elemento** que carrega o
+`aria-checked` — é o atributo que a regra usa para soltar o traço. Com a classe num filho, o
+seletor nunca casa e o check nunca aparece.
+
 ### Cores dos gráficos
 
 O cronograma usa o padrão **emphasis**: uma única cor de acento — o vermelho de status
@@ -145,11 +169,17 @@ segunda série categórica.
 
 ### Upload (`/lotes/novo`)
 
-Drag-and-drop no desktop, câmera/galeria no mobile. A validação de resolução é **client-side e
-bloqueante**: foto com menos de **1000px no lado menor** é recusada com a orientação de
-refotografar. Isso é feature, não limitação — foto de 400px de largura não tem o pixel do CMC7,
-e chutar dígito custa mais caro que tirar a foto de novo. Antes do upload a foto é reduzida
-para no máximo 2400px no lado maior (`src/lib/imagem.ts`).
+Drag-and-drop no desktop, câmera/galeria no mobile. A resolução é medida no browser assim que o
+arquivo entra: foto com menos de **1000px no lado menor** recebe o aviso
+
+> ‼️ Cheque com baixa qualidade — a análise pode acabar sendo afetada. Enviar outra foto ou
+> seguir mesmo assim?
+
+com as duas saídas como botão. **Quem decide é a operadora** — mas o aviso não morre no clique:
+quando ela escolhe seguir, todos os cheques daquela foto ganham um alerta amarelo permanente
+("Lido de foto com baixa qualidade", com a medida real em px), então quem abrir o lote depois
+sabe de onde aquela leitura saiu. Antes do upload a foto é reduzida para no máximo 2400px no
+lado maior (`src/lib/imagem.ts`).
 
 Foto com vários cheques empilhados funciona: o modelo separa, e o app avisa que a confiança cai.
 

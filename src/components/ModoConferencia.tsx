@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import CaixaErro from './CaixaErro'
 import Cmc7 from './Cmc7'
 import EditarCheque from './EditarCheque'
 import FotoCheque from './FotoCheque'
+import PainelDeslizante from './PainelDeslizante'
 import StatusBadge from './StatusBadge'
 import { linhaTabulada, valorParaDigitar } from './LinhaCheque'
 import type { ChequeComFoto } from './TabelaLote'
@@ -63,6 +65,8 @@ export default function ModoConferencia({
   const [editando, setEditando] = useState(false)
   const [fotoAberta, setFotoAberta] = useState(false)
   const [atalhosVisiveis, setAtalhosVisiveis] = useState(false)
+  // Direção da navegação: o cheque novo entra pelo lado de onde ele "vem".
+  const [direcao, setDirecao] = useState<'frente' | 'tras'>('frente')
   const [aviso, setAviso] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const timerAviso = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -159,11 +163,13 @@ export default function ModoConferencia({
   )
 
   const avancar = useCallback(() => {
+    setDirecao('frente')
     setIndice((atualIndice) => Math.min(atualIndice + 1, visiveis.length - 1))
     setEditando(false)
   }, [visiveis.length])
 
   const voltar = useCallback(() => {
+    setDirecao('tras')
     setIndice((atualIndice) => Math.max(atualIndice - 1, 0))
     setEditando(false)
   }, [])
@@ -361,13 +367,15 @@ export default function ModoConferencia({
         </dl>
       )}
 
-      {erro && (
-        <p className="rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm text-devolve-text">
-          {erro}
-        </p>
-      )}
+      <CaixaErro mensagem={erro} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* A key remonta o par foto+dados a cada cheque, disparando a entrada
+          direcional (transição "Page side-by-side" do transitions.dev). */}
+      <div
+        key={atual.id}
+        data-direcao={direcao}
+        className="t-page-enter grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+      >
         {/* Foto grande: a conferência é visual. */}
         <div>
           <FotoCheque
@@ -512,14 +520,16 @@ export default function ModoConferencia({
           )}
 
           {editando ? (
-            <EditarCheque
-              cheque={atual}
-              onCancelar={() => setEditando(false)}
-              onSalvo={(atualizado) => {
-                substituir(atualizado)
-                setEditando(false)
-              }}
-            />
+            <PainelDeslizante>
+              <EditarCheque
+                cheque={atual}
+                onCancelar={() => setEditando(false)}
+                onSalvo={(atualizado) => {
+                  substituir(atualizado)
+                  setEditando(false)
+                }}
+              />
+            </PainelDeslizante>
           ) : (
             <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
               <button
@@ -574,13 +584,18 @@ export default function ModoConferencia({
         </div>
       </div>
 
-      {/* Confirmação do que foi copiado, sem roubar o foco. */}
-      <div aria-live="polite" className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2">
-        {aviso && (
-          <span className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
-            {aviso}
-          </span>
-        )}
+      {/* Confirmação do que foi copiado, sem roubar o foco (transição "Toast"). */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2"
+      >
+        <span
+          className={`t-toast block rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg ${
+            aviso ? 'is-open' : ''
+          }`}
+        >
+          {aviso ?? ''}
+        </span>
       </div>
     </div>
   )

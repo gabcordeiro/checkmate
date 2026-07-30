@@ -32,7 +32,7 @@ export default async function Home() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-12 sm:py-20">
       <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-        ChequeCerto
+        Cheque Mate
       </p>
       <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
         Confira o lote de cheques antes de lançar.

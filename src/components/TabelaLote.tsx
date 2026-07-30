@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import CaixaErro from './CaixaErro'
 import EditarCheque from './EditarCheque'
 import LinhaCheque from './LinhaCheque'
+import PainelDeslizante from './PainelDeslizante'
 import { formatarBRL } from '@/lib/format'
 import { agruparPorEmitente } from '@/lib/lote'
 import type { ChequeRow } from '@/lib/supabase/types'
@@ -156,15 +158,18 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
           onAlternarLancado={(proximo) => void alternarLancado(cheque, proximo)}
           onEditar={() => setEditando((atual) => (atual === cheque.id ? null : cheque.id))}
         />
+        {/* O formulário desliza para dentro da linha (transição "Panel reveal"). */}
         {editando === cheque.id && (
-          <EditarCheque
-            cheque={cheque}
-            onCancelar={() => setEditando(null)}
-            onSalvo={(atualizado) => {
-              substituir(atualizado)
-              setEditando(null)
-            }}
-          />
+          <PainelDeslizante>
+            <EditarCheque
+              cheque={cheque}
+              onCancelar={() => setEditando(null)}
+              onSalvo={(atualizado) => {
+                substituir(atualizado)
+                setEditando(null)
+              }}
+            />
+          </PainelDeslizante>
         )}
       </li>
     )
@@ -217,11 +222,7 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
         </label>
       </div>
 
-      {erro && (
-        <p className="rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm text-devolve-text">
-          {erro}
-        </p>
-      )}
+      <CaixaErro mensagem={erro} />
 
       {visiveis.length === 0 ? (
         <p className="cartao px-4 py-6 text-sm text-slate-600">

@@ -1,6 +1,7 @@
 'use client'
 
 import BotaoCopiar from './BotaoCopiar'
+import CheckLancado from './CheckLancado'
 import Cmc7 from './Cmc7'
 import FotoCheque from './FotoCheque'
 import StatusBadge from './StatusBadge'
@@ -60,16 +61,11 @@ export default function LinhaCheque({
 
       <div className="ml-auto flex shrink-0 items-center gap-3 sm:order-last sm:ml-0 sm:flex-col sm:items-end sm:gap-2">
         <StatusBadge status={cheque.status} />
-        <label className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-slate-600">
-          <input
-            type="checkbox"
-            checked={cheque.lancado}
-            disabled={salvando}
-            onChange={(evento) => onAlternarLancado(evento.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
-          />
-          lançado
-        </label>
+        <CheckLancado
+          marcado={cheque.lancado}
+          desabilitado={salvando}
+          onAlternar={onAlternarLancado}
+        />
       </div>
 
       <div className="w-full min-w-0 space-y-1.5 sm:order-2 sm:w-auto sm:flex-1">

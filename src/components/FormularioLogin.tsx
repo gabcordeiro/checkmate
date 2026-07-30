@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import CaixaErro from './CaixaErro'
 import { criarClienteBrowser, supabaseConfigurado } from '@/lib/supabase/client'
 import { MENSAGEM_SETUP } from '@/lib/supabase/env'
 import { requisitosDaSenha, senhaValida, traduzirErroAuth } from '@/lib/authErros'
@@ -285,17 +286,8 @@ export default function FormularioLogin() {
         </button>
       </form>
 
-      {erro && (
-        <p className="mt-4 rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm leading-relaxed text-devolve-text">
-          {erro}
-        </p>
-      )}
-
-      {aviso && (
-        <p className="mt-4 rounded-lg border border-ok-border bg-ok-bg px-3 py-2 text-sm leading-relaxed text-ok-text">
-          {aviso}
-        </p>
-      )}
+      <CaixaErro mensagem={erro} className="mt-4" />
+      <CaixaErro mensagem={aviso} tom="ok" className="mt-4" />
 
       <div className="mt-5 space-y-1.5 text-sm">
         {modo === 'entrar' && (

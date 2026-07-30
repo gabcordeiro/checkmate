@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
           <Link href="/lotes" className="text-sm font-semibold tracking-tight">
-            ChequeCerto
+            Cheque Mate
           </Link>
           <nav className="flex-1 text-sm">
             <Link href="/lotes" className="text-slate-600 hover:text-slate-900">

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import ModoConferencia from '@/components/ModoConferencia'
 import { carregarLote, nomeDoLote } from '@/lib/carregarLote'
 
-export const metadata = { title: 'Conferência — ChequeCerto' }
+export const metadata = { title: 'Conferência — Cheque Mate' }
 
 export default async function ConferirPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

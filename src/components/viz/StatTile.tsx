@@ -6,6 +6,8 @@
  * status é a marca (a faixa lateral) mais o ícone e o rótulo — nunca a cor só.
  */
 
+import NumeroPopIn from './NumeroPopIn'
+
 export type TomTile = 'neutro' | 'critico' | 'atencao' | 'bom'
 
 const FAIXA: Record<TomTile, string> = {
@@ -23,6 +25,7 @@ export default function StatTile({
   icone,
   destaque = false,
   className = '',
+  animarValor = false,
 }: {
   rotulo: string
   valor: string
@@ -31,6 +34,8 @@ export default function StatTile({
   icone?: string
   destaque?: boolean
   className?: string
+  /** Entrada caractere por caractere. Só para o número que puxa a atenção. */
+  animarValor?: boolean
 }) {
   return (
     <div
@@ -44,13 +49,22 @@ export default function StatTile({
       {/* Número grande usa os algarismos proporcionais da fonte: `tabular-nums`
           dá a todo dígito a largura do zero e deixa o valor solto no tamanho
           de display. Tabular fica para colunas que precisam alinhar. */}
-      <span
-        className={`font-semibold text-slate-900 ${
-          destaque ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
-        }`}
-      >
-        {valor}
-      </span>
+      {animarValor ? (
+        <NumeroPopIn
+          valor={valor}
+          className={`font-semibold text-slate-900 ${
+            destaque ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
+          }`}
+        />
+      ) : (
+        <span
+          className={`font-semibold text-slate-900 ${
+            destaque ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
+          }`}
+        >
+          {valor}
+        </span>
+      )}
       {apoio && <span className="text-xs leading-snug text-slate-500">{apoio}</span>}
     </div>
   )

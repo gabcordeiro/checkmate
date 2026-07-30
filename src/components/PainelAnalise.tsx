@@ -87,6 +87,7 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
           // No celular ocupa a faixa inteira: é o número mais importante da
           // tela e, meio a meio, "R$ 15.232,90" quebra em duas linhas.
           className="col-span-2 lg:col-span-1"
+          animarValor
         />
         <StatTile
           rotulo="Total do lote"

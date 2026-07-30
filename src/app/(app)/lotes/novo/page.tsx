@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import UploadLote from '@/components/UploadLote'
 import { criarClienteServidor } from '@/lib/supabase/server'
 
-export const metadata = { title: 'Novo lote — ChequeCerto' }
+export const metadata = { title: 'Novo lote — Cheque Mate' }
 
 export default async function NovoLotePage() {
   const supabase = await criarClienteServidor()

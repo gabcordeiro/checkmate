@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import CaixaErro from './CaixaErro'
 import { criarClienteBrowser } from '@/lib/supabase/client'
 import { requisitosDaSenha, senhaValida, traduzirErroAuth } from '@/lib/authErros'
 
@@ -105,11 +106,7 @@ export default function FormularioNovaSenha({ email }: { email: string | null })
         ))}
       </ul>
 
-      {erro && (
-        <p className="rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm leading-relaxed text-devolve-text">
-          {erro}
-        </p>
-      )}
+      <CaixaErro mensagem={erro} />
 
       <button type="submit" disabled={enviando} className="btn-primario w-full">
         {enviando ? 'Salvando…' : 'Salvar senha'}
