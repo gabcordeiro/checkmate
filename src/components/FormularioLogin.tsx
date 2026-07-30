@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { criarClienteBrowser, supabaseConfigurado } from '@/lib/supabase/client'
+import { MENSAGEM_SETUP } from '@/lib/supabase/env'
 import { requisitosDaSenha, senhaValida, traduzirErroAuth } from '@/lib/authErros'
 
 /**
@@ -60,9 +61,7 @@ export default function FormularioLogin() {
 
   function semConfiguracao(): boolean {
     if (supabaseConfigurado) return false
-    setErro(
-      'Supabase ainda não foi configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.',
-    )
+    setErro(MENSAGEM_SETUP)
     return true
   }
 

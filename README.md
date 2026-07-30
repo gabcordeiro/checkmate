@@ -104,14 +104,20 @@ trocar a senha estando logada.
 Copie `.env.example` para `.env.local` (dev) e configure as mesmas na Vercel (Settings →
 Environment Variables):
 
-| Variável                        | Onde encontrar                                       |
-| ------------------------------- | ---------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase → Project Settings → API                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | idem (é pública, protegida por RLS)                  |
-| `SUPABASE_SERVICE_ROLE_KEY`     | idem — **só servidor**, ignora RLS, nunca no client   |
-| `VISION_PROVIDER`               | `gemini` (padrão) ou `groq`                          |
-| `GEMINI_API_KEY`                | https://aistudio.google.com/apikey                   |
-| `GROQ_API_KEY`                  | https://console.groq.com/keys                        |
+| Variável                                | Onde encontrar                                      |
+| --------------------------------------- | --------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`              | Supabase → Project Settings → API                   |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`  | idem → API Keys (é pública, protegida por RLS)      |
+| `SUPABASE_SECRET_KEY`                   | idem — **só servidor**, ignora RLS, nunca no client |
+| `VISION_PROVIDER`                       | `gemini` (padrão) ou `groq`                         |
+| `GEMINI_API_KEY`                        | https://aistudio.google.com/apikey                  |
+| `GROQ_API_KEY`                          | https://console.groq.com/keys                       |
+
+O Supabase renomeou as chaves de API: projetos novos entregam `sb_publishable_...` e
+`sb_secret_...`; projetos antigos entregam a anon key e a service_role em JWT. O app aceita os
+dois nomes de variável — `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ou
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY` — então
+basta preencher o nome que o seu projeto mostrar (`src/lib/supabase/env.ts`).
 
 ### 4. Rodar
 
@@ -221,7 +227,7 @@ pt-BR) e PDF simples de conferência.
   `owner_id = auth.uid()`.
 - Bucket `cheques` privado. Policies de Storage por prefixo de pasta = `auth.uid()`, e o
   caminho é sempre `<uid>/<batch_id>/<arquivo>`. A tela pede signed URLs de 1 hora.
-- `SUPABASE_SERVICE_ROLE_KEY` sem prefixo `NEXT_PUBLIC_` de propósito: se alguém importar
+- A chave de serviço fica sem prefixo `NEXT_PUBLIC_` de propósito: se alguém importar
   `src/lib/supabase/admin.ts` de um componente client, quebra em vez de vazar.
 - A chave do modelo de visão nunca chega ao browser.
 - Coluna `org_id` (nullable, sem policy) já existe nas três tabelas para a fase 2

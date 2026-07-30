@@ -1,22 +1,27 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import {
+  CHAVE_PLACEHOLDER,
+  SUPABASE_CHAVE_PUBLICA,
+  SUPABASE_URL,
+  URL_PLACEHOLDER,
+  supabaseConfigurado,
+} from './env'
 import type { Database } from './types'
 
-export const supabaseConfiguradoServidor = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-)
+export const supabaseConfiguradoServidor = supabaseConfigurado
 
 /**
  * Cliente para Server Components, Route Handlers e Server Actions.
- * Usa a anon key + cookie de sessão, então TODA query passa por RLS — é isso
- * que garante que a operadora só veja os lotes dela.
+ * Usa a chave pública + cookie de sessão, então TODA query passa por RLS — é
+ * isso que garante que a operadora só veja os lotes dela.
  */
 export async function criarClienteServidor() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key',
+    SUPABASE_URL || URL_PLACEHOLDER,
+    SUPABASE_CHAVE_PUBLICA || CHAVE_PLACEHOLDER,
     {
       cookies: {
         getAll() {

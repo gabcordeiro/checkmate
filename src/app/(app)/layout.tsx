@@ -9,8 +9,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <h1 className="text-xl font-semibold">Falta configurar o Supabase</h1>
         <p className="mt-2 text-sm text-slate-600">
           Defina <code>NEXT_PUBLIC_SUPABASE_URL</code> e{' '}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no ambiente (local em{' '}
-          <code>.env.local</code>, produção nas Environment Variables da Vercel) e recarregue.
+          <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (ou, em projetos antigos,{' '}
+          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>) no ambiente — local em{' '}
+          <code>.env.local</code>, produção nas Environment Variables da Vercel — e recarregue.
         </p>
       </main>
     )

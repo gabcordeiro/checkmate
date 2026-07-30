@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { SUPABASE_CHAVE_PUBLICA, SUPABASE_URL, supabaseConfigurado } from '@/lib/supabase/env'
 
 /**
  * Renova o cookie de sessão do Supabase a cada navegação e barra as rotas
@@ -8,13 +9,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
   // Sem env configurada, deixa passar: a UI mostra a tela de setup.
-  if (!url || !anonKey) return response
+  if (!supabaseConfigurado) return response
 
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = createServerClient(SUPABASE_URL, SUPABASE_CHAVE_PUBLICA, {
     cookies: {
       getAll() {
         return request.cookies.getAll()
