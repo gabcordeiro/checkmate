@@ -45,6 +45,8 @@ export type ChequeRow = {
   status: StatusCheque
   alertas: Alerta[]
   lancado: boolean
+  /** true quando a operadora corrigiu um campo e a validação foi refeita. */
+  revisado_manualmente: boolean
   created_at: string
 }
 

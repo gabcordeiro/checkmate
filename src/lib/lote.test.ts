@@ -40,6 +40,7 @@ function linha(over: Partial<ChequeRow> = {}): ChequeRow {
     status: 'ok',
     alertas: [],
     lancado: false,
+    revisado_manualmente: false,
     created_at: '2026-07-29T12:00:00Z',
     ...over,
   }

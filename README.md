@@ -56,6 +56,8 @@ Editor:
    que cria o profile no primeiro login e trigger que mantém os totais do lote.
 2. `supabase/migrations/0002_storage.sql` — bucket privado `cheques` e policies por prefixo de
    pasta.
+3. `supabase/migrations/0003_revisao_manual.sql` — coluna `revisado_manualmente`, usada pela
+   correção manual da operadora.
 
 Ou, com a CLI:
 
@@ -96,10 +98,20 @@ Environment Variables):
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # 86 testes do módulo de validação
+npm test           # 113 testes: validação, análise do lote, revalidação, CSV
 npm run typecheck
 npm run build
 ```
+
+### Cores dos gráficos
+
+O cronograma usa o padrão **emphasis**: uma única cor de acento — o vermelho de status
+reservado (`#d03b3b`, "pode ser devolvido") — e o resto no cinza de recessão (`#64748b`). Só
+duas marcas, com legenda sempre presente, rótulo direto compacto no topo de cada coluna, linha
+de leitura com o valor cheio e uma visão em tabela: a identidade nunca depende só da cor. O par
+foi verificado com o validador de paleta (separação CVD ΔE 12,4 · contraste ≥ 3:1 na superfície
+clara); o cinza fica abaixo do piso de croma de propósito, porque é o canal de recessão, não uma
+segunda série categórica.
 
 ---
 
@@ -144,12 +156,36 @@ operação); **amarelo** = leitura suspeita, conferir na foto.
 
 ### Tela do lote (`/lotes/[id]`)
 
-Cheques agrupados por emitente normalizado (caixa alta, sem acento), ordenados por data
-efetiva, com subtotal por emitente e total do lote. Coluna CMC7 com os 30 dígitos e botão
-COPIAR de um clique; dígitos duvidosos destacados, com tooltip explicando o que o verificador
-decidiu. Miniatura da foto expansível ao lado de cada linha. Checkbox "lançado no sistema"
-persistido por cheque. Painel no topo com o resumo e a lista de alertas — vermelhos primeiro,
-cada um linkando para a linha do cheque.
+O topo é analítico e responde, nesta ordem: **quanto desse lote pode voltar do banco**
+(soma dos cheques vermelhos, em reais e em % do lote), quanto vale o lote, quantos estão a
+conferir e quanto do trabalho já foi lançado. Depois vem o **cronograma de vencimentos** —
+coluna empilhada por mês, com a parte em risco destacada — e **"o que apareceu neste lote"**,
+que agrupa os alertas por tipo com contagem e valor afetado (`extenso divergente ×3 ·
+R$ 12.400,90`) em vez de uma lista de 40 linhas soltas. Cada grupo abre nos cheques atingidos.
+
+A lista tem **filtros** (todos / pode devolver / conferir / a lançar / lançados, com contagem)
+e **ordenação** (por emitente agrupado, por data, maior valor, mais grave). Cada linha traz a
+miniatura expansível, o CMC7 com os dígitos duvidosos destacados, botões de copiar separados
+para **CMC7, valor e data** — os três campos que ela digita no sistema — mais "copiar linha"
+separada por tabulação para colar em planilha. Checkbox "lançado" persistido por cheque.
+
+### Modo conferência (`/lotes/[id]/conferir`)
+
+É onde o tempo é ganho. Um cheque por vez, foto grande de um lado e os dados do outro na
+ordem em que ela digita, com fila escolhível (a lançar / pode devolver / todos) e progresso.
+Tudo pelo teclado: `C` copia o CMC7, `V` o valor, `D` a data, `L` a linha, `Enter` marca como
+lançado e avança, `←`/`→` navega, `Z` amplia a foto, `E` abre a correção, `?` mostra os
+atalhos. Um cheque sai em quatro toques, sem tirar a mão do teclado.
+
+### Correção manual com revalidação
+
+Quando o modelo lê errado, quem corrige é a operadora — e a correção **re-roda a validação no
+servidor**: consertar um dígito do CMC7 recalcula o DV, consertar a transcrição do extenso roda
+o parser de novo, mexer nas datas recalcula a data efetiva e o alerta de "bom para". Um campo
+editado nunca fica com um alerta velho pendurado. A linha é marcada como
+`revisado_manualmente` e a tela mostra "revisado por você". A revalidação roda no servidor
+(`PATCH /api/cheques/[id]`), nunca no browser: status e alertas são a verdade do registro e não
+podem depender do que o client mandou.
 
 ### Histórico e exportação
 

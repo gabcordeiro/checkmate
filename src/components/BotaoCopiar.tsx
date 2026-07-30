@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { copiarTexto } from '@/lib/clipboard'
 
 /**
  * Um clique → clipboard, com feedback visual. É a interação mais usada do app:
@@ -25,25 +26,7 @@ export default function BotaoCopiar({
   }, [])
 
   async function copiar() {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(texto)
-      } else {
-        // Safari em contexto sem permissão de clipboard: caminho antigo.
-        const area = document.createElement('textarea')
-        area.value = texto
-        area.setAttribute('readonly', '')
-        area.style.position = 'fixed'
-        area.style.opacity = '0'
-        document.body.appendChild(area)
-        area.select()
-        document.execCommand('copy')
-        document.body.removeChild(area)
-      }
-      setEstado('copiado')
-    } catch {
-      setEstado('erro')
-    }
+    setEstado((await copiarTexto(texto)) ? 'copiado' : 'erro')
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => setEstado('pronto'), 1600)
   }
