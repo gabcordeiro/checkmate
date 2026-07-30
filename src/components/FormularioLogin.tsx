@@ -1,24 +1,76 @@
 'use client'
 
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { criarClienteBrowser, supabaseConfigurado } from '@/lib/supabase/client'
+import { requisitosDaSenha, senhaValida, traduzirErroAuth } from '@/lib/authErros'
+
+/**
+ * Entrada no app: Google OU e-mail e senha.
+ *
+ * O Google é o caminho rápido para quem já tem conta Google da empresa; o
+ * e-mail e senha existe porque não toda operadora tem — e obrigar a criar uma
+ * conta Google só para usar a ferramenta é atrito que não paga nada.
+ */
+
+type Modo = 'entrar' | 'criar' | 'recuperar'
+
+const TITULOS: Record<Modo, { titulo: string; texto: string; acao: string }> = {
+  entrar: {
+    titulo: 'Entrar',
+    texto: 'Cada usuário vê apenas os próprios lotes.',
+    acao: 'Entrar',
+  },
+  criar: {
+    titulo: 'Criar conta',
+    texto: 'Você vai receber um e-mail para confirmar o endereço.',
+    acao: 'Criar conta',
+  },
+  recuperar: {
+    titulo: 'Esqueci minha senha',
+    texto: 'Enviamos um link para você definir uma senha nova.',
+    acao: 'Enviar link',
+  },
+}
 
 export default function FormularioLogin() {
+  const router = useRouter()
   const params = useSearchParams()
   const proximo = params.get('proximo') || '/lotes'
+
+  const [modo, setModo] = useState<Modo>('entrar')
+  const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [confirmacao, setConfirmacao] = useState('')
+  const [enviando, setEnviando] = useState(false)
   // Erro devolvido pela rota /auth/callback quando o OAuth falha.
   const [erro, setErro] = useState<string | null>(params.get('erro'))
-  const [enviando, setEnviando] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  const requisitos = requisitosDaSenha(senha)
+
+  function trocarModo(proximoModo: Modo) {
+    setModo(proximoModo)
+    setErro(null)
+    setAviso(null)
+    setSenha('')
+    setConfirmacao('')
+  }
+
+  function semConfiguracao(): boolean {
+    if (supabaseConfigurado) return false
+    setErro(
+      'Supabase ainda não foi configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+    )
+    return true
+  }
 
   async function entrarComGoogle() {
     setErro(null)
-    if (!supabaseConfigurado) {
-      setErro(
-        'Supabase ainda não foi configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY.',
-      )
-      return
-    }
+    setAviso(null)
+    if (semConfiguracao()) return
+
     setEnviando(true)
     const supabase = criarClienteBrowser()
     const destino = new URL('/auth/callback', window.location.origin)
@@ -29,13 +81,105 @@ export default function FormularioLogin() {
       options: { redirectTo: destino.toString() },
     })
     if (error) {
-      setErro(error.message)
+      setErro(traduzirErroAuth(error.message))
+      setEnviando(false)
+    }
+    // Sucesso não desliga o "enviando": o navegador já está saindo para o Google.
+  }
+
+  async function enviar(evento: React.FormEvent) {
+    evento.preventDefault()
+    setErro(null)
+    setAviso(null)
+    if (semConfiguracao()) return
+
+    const emailLimpo = email.trim().toLowerCase()
+    if (!emailLimpo) {
+      setErro('Informe seu e-mail.')
+      return
+    }
+
+    const supabase = criarClienteBrowser()
+    setEnviando(true)
+
+    try {
+      if (modo === 'entrar') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: emailLimpo,
+          password: senha,
+        })
+        if (error) throw error
+        // O middleware cuida do resto; refresh para o servidor ver o cookie.
+        router.replace(proximo.startsWith('/') ? proximo : '/lotes')
+        router.refresh()
+        return
+      }
+
+      if (modo === 'criar') {
+        if (!senhaValida(senha)) {
+          setErro('A senha ainda não atende aos requisitos listados abaixo.')
+          return
+        }
+        if (senha !== confirmacao) {
+          setErro('As senhas não coincidem.')
+          return
+        }
+
+        const destino = new URL('/auth/callback', window.location.origin)
+        destino.searchParams.set('proximo', proximo)
+
+        const { data, error } = await supabase.auth.signUp({
+          email: emailLimpo,
+          password: senha,
+          options: {
+            emailRedirectTo: destino.toString(),
+            // Alimenta o trigger que cria a linha em `profiles`.
+            data: nome.trim() ? { full_name: nome.trim() } : undefined,
+          },
+        })
+        if (error) throw error
+
+        // Com confirmação de e-mail ligada (padrão), não vem sessão.
+        if (data.session) {
+          router.replace(proximo.startsWith('/') ? proximo : '/lotes')
+          router.refresh()
+          return
+        }
+        setAviso(
+          `Conta criada. Enviamos um link de confirmação para ${emailLimpo} — abra o e-mail e clique no link para entrar. Confira também o lixo eletrônico.`,
+        )
+        setModo('entrar')
+        setSenha('')
+        setConfirmacao('')
+        return
+      }
+
+      // recuperar
+      const destino = new URL('/auth/callback', window.location.origin)
+      destino.searchParams.set('proximo', '/nova-senha')
+
+      const { error } = await supabase.auth.resetPasswordForEmail(emailLimpo, {
+        redirectTo: destino.toString(),
+      })
+      if (error) throw error
+      setAviso(
+        `Se existe uma conta com ${emailLimpo}, o link para definir uma senha nova já está a caminho. Confira também o lixo eletrônico.`,
+      )
+      setModo('entrar')
+    } catch (e) {
+      setErro(traduzirErroAuth(e instanceof Error ? e.message : null))
+    } finally {
       setEnviando(false)
     }
   }
 
+  const { titulo, texto, acao } = TITULOS[modo]
+
   return (
     <>
+      <h1 className="mt-2 text-2xl font-semibold">{titulo}</h1>
+      <p className="mt-2 text-sm text-slate-600">{texto}</p>
+
       <button
         type="button"
         onClick={entrarComGoogle}
@@ -60,19 +204,140 @@ export default function FormularioLogin() {
             d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58Z"
           />
         </svg>
-        {enviando ? 'Abrindo o Google…' : 'Entrar com Google'}
+        Entrar com Google
       </button>
 
+      <div className="my-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-slate-200" />
+        <span className="text-xs uppercase tracking-wide text-slate-400">ou</span>
+        <span className="h-px flex-1 bg-slate-200" />
+      </div>
+
+      <form onSubmit={enviar} className="space-y-3">
+        {modo === 'criar' && (
+          <label className="block">
+            <span className="rotulo">Seu nome</span>
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              autoComplete="name"
+              placeholder="Amanda"
+              className="campo"
+            />
+          </label>
+        )}
+
+        <label className="block">
+          <span className="rotulo">E-mail</span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            inputMode="email"
+            className="campo"
+          />
+        </label>
+
+        {modo !== 'recuperar' && (
+          <label className="block">
+            <span className="rotulo">Senha</span>
+            <input
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              autoComplete={modo === 'criar' ? 'new-password' : 'current-password'}
+              required
+              className="campo"
+            />
+          </label>
+        )}
+
+        {modo === 'criar' && (
+          <>
+            <label className="block">
+              <span className="rotulo">Repita a senha</span>
+              <input
+                type="password"
+                value={confirmacao}
+                onChange={(e) => setConfirmacao(e.target.value)}
+                autoComplete="new-password"
+                required
+                className="campo"
+              />
+            </label>
+
+            <ul className="space-y-0.5 text-xs">
+              {requisitos.map((requisito) => (
+                <li
+                  key={requisito.rotulo}
+                  className={requisito.ok ? 'text-ok-text' : 'text-slate-500'}
+                >
+                  <span aria-hidden>{requisito.ok ? '✓' : '·'}</span> {requisito.rotulo}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <button type="submit" disabled={enviando} className="btn-primario w-full">
+          {enviando ? 'Aguarde…' : acao}
+        </button>
+      </form>
+
       {erro && (
-        <p className="mt-4 rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm text-devolve-text">
+        <p className="mt-4 rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2 text-sm leading-relaxed text-devolve-text">
           {erro}
         </p>
       )}
 
+      {aviso && (
+        <p className="mt-4 rounded-lg border border-ok-border bg-ok-bg px-3 py-2 text-sm leading-relaxed text-ok-text">
+          {aviso}
+        </p>
+      )}
+
+      <div className="mt-5 space-y-1.5 text-sm">
+        {modo === 'entrar' && (
+          <>
+            <p>
+              <button
+                type="button"
+                onClick={() => trocarModo('criar')}
+                className="text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+              >
+                Não tenho conta — criar uma
+              </button>
+            </p>
+            <p>
+              <button
+                type="button"
+                onClick={() => trocarModo('recuperar')}
+                className="text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+              >
+                Esqueci minha senha
+              </button>
+            </p>
+          </>
+        )}
+        {modo !== 'entrar' && (
+          <p>
+            <button
+              type="button"
+              onClick={() => trocarModo('entrar')}
+              className="text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+            >
+              ← Já tenho conta, quero entrar
+            </button>
+          </p>
+        )}
+      </div>
+
       {!supabaseConfigurado && (
         <p className="mt-4 text-xs leading-relaxed text-slate-500">
-          Setup: no Supabase, habilite o provider Google em Authentication → Providers e adicione{' '}
-          <code>{'<origem>'}/auth/callback</code> em Redirect URLs.
+          Setup: no Supabase, habilite os providers Email e Google em Authentication → Providers,
+          e configure Site URL e Redirect URLs em Authentication → URL Configuration.
         </p>
       )}
     </>

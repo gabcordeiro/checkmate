@@ -9,15 +9,11 @@ export default function LoginPage() {
       <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
         ChequeCerto
       </p>
-      <h1 className="mt-2 text-2xl font-semibold">Entrar</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        O acesso é pela sua conta Google. Cada usuário vê apenas os próprios lotes.
-      </p>
 
       {/* O formulário lê a querystring (`proximo`, `erro`), então precisa de
           fronteira de Suspense para o build não tentar pré-renderizá-lo. */}
       <Suspense
-        fallback={<div className="mt-6 h-11 w-full animate-pulse rounded-lg bg-slate-200" />}
+        fallback={<div className="mt-8 h-64 w-full animate-pulse rounded-lg bg-slate-200" />}
       >
         <FormularioLogin />
       </Suspense>

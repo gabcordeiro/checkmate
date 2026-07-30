@@ -19,7 +19,7 @@ operadora. Erro do modelo custa no máximo um alerta falso, nunca um lançamento
 | Frontend   | Next.js 15 (App Router) + React 19 + TypeScript + Tailwind, mobile-first |
 | Hospedagem | Vercel                                                                   |
 | Backend    | Supabase — Postgres + Auth + Storage, RLS em todas as tabelas            |
-| Auth       | Supabase Auth com Google OAuth (sem cadastro por senha)                  |
+| Auth       | Supabase Auth: Google OAuth **e** e-mail + senha                         |
 | Visão      | Gemini 2.5 Flash (padrão) ou Groq llama-4-scout, com saída estruturada   |
 
 ### Sobre o provedor de IA (comparação com o MatchCV)
@@ -66,18 +66,38 @@ npx supabase link --project-ref <ref-do-projeto>
 npx supabase db push
 ```
 
-### 2. Google OAuth
+### 2. Autenticação
 
-No Supabase: **Authentication → Providers → Google**, habilite e cole Client ID/Secret do
-Google Cloud Console. Em **Authentication → URL Configuration → Redirect URLs**, adicione:
+Dois caminhos de entrada: **Google** e **e-mail + senha**. Os dois precisam estar habilitados
+em **Authentication → Providers** (Email e Google).
 
-```
-http://localhost:3000/auth/callback
-https://<seu-dominio-na-vercel>/auth/callback
-```
+**URL Configuration** (Authentication → URL Configuration) — é aqui que mora a pegadinha:
 
-No Google Cloud Console, o **Authorized redirect URI** é o do Supabase:
-`https://<ref>.supabase.co/auth/v1/callback`.
+| Campo | Valor |
+| --- | --- |
+| **Site URL** | `https://<seu-dominio-na-vercel>` (só um, e **nunca** localhost) |
+| **Redirect URLs** | `https://<seu-dominio-na-vercel>/**` e `http://localhost:3000/**` |
+
+A **Site URL** é o que o Supabase usa para montar os links dos e-mails de confirmação e de
+recuperação de senha. Se ela estiver em `http://localhost:3000`, todo e-mail que sair vai
+apontar para a máquina de quem clicou — e o link não abre. As **Redirect URLs** são só a lista
+de destinos permitidos; deixar localhost aí é o que permite desenvolver localmente, e não afeta
+os e-mails.
+
+**Google**: em **Providers → Google**, cole Client ID e Secret do Google Cloud Console. Lá, no
+OAuth client do tipo *Web application*:
+
+- Authorized JavaScript origins: `https://<seu-dominio-na-vercel>`
+- Authorized redirect URIs: `https://<ref-do-projeto>.supabase.co/auth/v1/callback`
+  (o `<ref>` é o subdomínio da sua `NEXT_PUBLIC_SUPABASE_URL`)
+
+O redirect vai para o **Supabase**, não para o app: o Supabase recebe o retorno do Google e só
+então manda para `/auth/callback` do app.
+
+**Fluxos que o app trata** em `src/app/auth/callback/route.ts`: OAuth, confirmação de e-mail e
+recuperação de senha, nos dois formatos de link (`?code=` do PKCE e `?token_hash=&type=` de
+templates customizados). Recuperação de senha cai em `/nova-senha`, que também serve para
+trocar a senha estando logada.
 
 ### 3. Variáveis de ambiente
 

@@ -44,7 +44,7 @@ export default async function Home() {
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href="/login" className="btn-primario">
-          Entrar com Google
+          Entrar
         </Link>
       </div>
 

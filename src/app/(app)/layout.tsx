@@ -40,6 +40,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/lotes/novo" className="btn-primario px-3 py-1.5 text-xs">
             Novo lote
           </Link>
+          <Link
+            href="/nova-senha"
+            className="hidden text-xs text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline sm:inline"
+          >
+            Senha
+          </Link>
           <form action="/auth/signout" method="post">
             <button
               type="submit"
