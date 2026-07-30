@@ -65,6 +65,13 @@
   --shake-dur-b: 60ms;
   --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* Texts reveal — entrada das telas de login, landing e upload */
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Toast — confirmação do que foi copiado no modo conferência */
   --toast-open: 350ms;
   --toast-close: 250ms;
@@ -289,6 +296,47 @@
   .t-shake {
     animation: none !important;
     transform: none !important;
+  }
+}
+
+/* ── Texts reveal ─────────────────────────────────────────────────────────
+   As linhas sobem com blur, escalonadas, para o olho pousar no título antes
+   do resto. O original é dirigido por JS (`.is-shown` no pai); nas telas de
+   entrada não há estado a esperar, então roda como animação na montagem —
+   mesmos tokens, mesma curva. */
+@keyframes t-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(var(--stagger-distance));
+    filter: blur(var(--stagger-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.t-reveal {
+  animation: t-reveal-up var(--stagger-dur) var(--stagger-ease) both;
+  will-change: transform, opacity, filter;
+}
+.t-reveal-1 {
+  animation-delay: var(--stagger-stagger);
+}
+.t-reveal-2 {
+  animation-delay: calc(var(--stagger-stagger) * 3);
+}
+.t-reveal-3 {
+  animation-delay: calc(var(--stagger-stagger) * 5);
+}
+.t-reveal-4 {
+  animation-delay: calc(var(--stagger-stagger) * 7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-reveal {
+    animation: none !important;
   }
 }
 

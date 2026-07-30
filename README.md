@@ -33,12 +33,21 @@ O Cheque Mate **replica o padrão** — `fetch` puro, sem SDK, chave só no serv
 estruturada em vez de parsing de texto livre — mas **troca o modelo**, porque
 `llama-3.3-70b-versatile` é texto-only e aqui o modelo precisa ver a imagem:
 
-- **`gemini` (padrão):** `gemini-2.5-flash` com `responseSchema`, que é saída estruturada
-  garantida pelo servidor do modelo. Melhor OCR de manuscrito, e a chave você já tem.
+- **`gemini` (padrão):** um modelo Flash com `responseSchema`, que é saída estruturada garantida
+  pelo servidor do modelo. Melhor OCR de manuscrito.
 - **`groq`:** `meta-llama/llama-4-scout-17b-16e-instruct` (esse tem visão), com
   `response_format: json_object` e o schema no prompt.
 
 Troque com `VISION_PROVIDER=gemini|groq`. Sem a variável, o app usa quem tiver chave.
+
+**O nome do modelo do Gemini não está fixo no código, de propósito.** O Google aposenta nomes
+sem aviso — `gemini-2.5-flash` começou a responder 404 ("no longer available to new users") de um
+dia para o outro e derrubou a extração. Então `src/lib/vision/gemini-modelos.ts` tenta uma lista
+de candidatos (os apelidos `-latest` primeiro, porque o Google os mantém apontando para um modelo
+vivo) e, se todos derem 404, **pergunta à própria API quais modelos aquela chave tem** e escolhe
+o melhor para ler cheque: prefere Flash (custo por cheque), penaliza `lite` (economiza mais e
+erra mais dígito) e descarta embedding/tts/imagem/live. O escolhido fica em memória do processo.
+`GEMINI_MODEL` continua existindo para forçar um modelo específico.
 
 A extração roda em **API route do Next** (`/api/extract`), não em Edge Function, para a chave
 ficar nas Environment Variables da Vercel junto com o resto do deploy.
@@ -152,6 +161,22 @@ Só entrou transição que comunica algo, porque a operadora passa horas nesta t
 Detalhe que custou um bug: `.t-check` tem de ficar no **mesmo elemento** que carrega o
 `aria-checked` — é o atributo que a regra usa para soltar o traço. Com a classe num filho, o
 seletor nunca casa e o check nunca aparece.
+
+### Paleta e identidade
+
+A regra que manda em tudo: **verde/amarelo/vermelho são reservados** para o semáforo de
+conferência (ok / conferir / banco pode devolver). É a informação mais importante da tela, então
+nenhuma cor de marca pode competir com ela. Por isso a marca é **índigo → violeta**
+(`marca-*` em `tailwind.config.ts`): família visualmente distante das três e que carrega a
+leitura de "banco, confiança, precisão".
+
+O neutro é `tinta-*`, um cinza azulado — não preto puro, que é o que dá cara de wireframe. O
+fundo são três halos de marca bem diluídos (nenhum passa de 13% de opacidade) em
+`background-attachment: fixed`, para o gradiente não escorrer no scroll de um lote longo.
+
+Tipografia: **Plus Jakarta Sans** na interface (números abertos, caixa alta larga — a tela é
+cheia de valor e de emitente em CAIXA ALTA) e **JetBrains Mono** no CMC7, onde 0/O e 1/l não
+podem se confundir, porque conferir dígito é o trabalho.
 
 ### Cores dos gráficos
 

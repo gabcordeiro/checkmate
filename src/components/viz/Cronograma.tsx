@@ -61,7 +61,7 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
     <section className="cartao px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-sm font-semibold">Cronograma de vencimentos</h2>
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-3 text-xs text-tinta-500">
           <span className="flex items-center gap-1.5">
             <span aria-hidden className="h-2 w-2 rounded-full bg-marca-neutro" />
             Sem alerta vermelho
@@ -74,7 +74,7 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
       </div>
 
       {/* Linha de leitura: altura fixa para o gráfico não pular ao passar o mouse. */}
-      <p className="mt-1 min-h-[1.15rem] text-xs text-slate-600">
+      <p className="mt-1 min-h-[1.15rem] text-xs text-tinta-600">
         {emFoco && emFoco.quantidade > 0 ? (
           <>
             <strong className="font-medium">{emFoco.rotulo}</strong> · {formatarBRL(emFoco.total)}{' '}
@@ -118,20 +118,20 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
                     mes.risco > 0 ? `, ${formatarBRL(mes.risco)} pode ser devolvido` : ''
                   }`}
                   // Alvo de interação maior que a marca: a coluna toda responde.
-                  className={`flex w-full flex-1 cursor-default flex-col justify-end gap-1 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
-                    selecionado ? 'bg-slate-50' : ''
+                  className={`flex w-full flex-1 cursor-default flex-col justify-end gap-1 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-tinta-400 ${
+                    selecionado ? 'bg-tinta-50' : ''
                   }`}
                 >
                   <span
                     className={`block h-3.5 truncate text-center text-[10px] tabular-nums ${
-                      selecionado ? 'text-slate-900' : 'text-slate-500'
+                      selecionado ? 'text-tinta-900' : 'text-tinta-500'
                     }`}
                   >
                     {rotularColunas && mes.total > 0 ? compacto(mes.total) : ''}
                   </span>
 
                   {mes.total === 0 ? (
-                    <span aria-hidden className="mx-auto h-[3px] w-6 rounded-sm bg-slate-100" />
+                    <span aria-hidden className="mx-auto h-[3px] w-6 rounded-sm bg-tinta-100" />
                   ) : (
                     <span aria-hidden className="mx-auto flex w-6 max-w-full flex-col justify-end">
                       {alturaRisco > 0 && (
@@ -155,10 +155,10 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
                 </button>
 
                 {/* Linha de base: hairline, sólida, recessiva. */}
-                <span aria-hidden className="h-px w-full bg-slate-200" />
+                <span aria-hidden className="h-px w-full bg-tinta-200" />
                 <span
                   className={`w-full truncate text-center text-[10px] tabular-nums ${
-                    mes.total > 0 ? 'text-slate-600' : 'text-slate-300'
+                    mes.total > 0 ? 'text-tinta-600' : 'text-tinta-300'
                   }`}
                 >
                   {mes.rotulo}
@@ -170,11 +170,11 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
       </div>
 
       <details className="mt-2">
-        <summary className="cursor-pointer text-[11px] text-slate-500 hover:text-slate-900">
+        <summary className="cursor-pointer text-[11px] text-tinta-500 hover:text-tinta-900">
           Ver como tabela
         </summary>
         <table className="mt-2 w-full text-xs">
-          <thead className="text-left text-slate-500">
+          <thead className="text-left text-tinta-500">
             <tr>
               <th className="py-1 font-medium">Mês</th>
               <th className="py-1 text-right font-medium">Cheques</th>
@@ -186,7 +186,7 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
             {meses
               .filter((m) => m.quantidade > 0)
               .map((mes) => (
-                <tr key={mes.mes} className="border-t border-slate-100">
+                <tr key={mes.mes} className="border-t border-tinta-100">
                   <td className="py-1">{mes.rotulo}</td>
                   <td className="py-1 text-right">{mes.quantidade}</td>
                   <td className="py-1 text-right">{formatarBRL(mes.total)}</td>
@@ -197,7 +197,7 @@ export default function Cronograma({ meses }: { meses: Vencimento[] }) {
                   )}
                 </tr>
               ))}
-            <tr className="border-t border-slate-200 font-medium">
+            <tr className="border-t border-tinta-200 font-medium">
               <td className="py-1">Total</td>
               <td className="py-1 text-right">
                 {meses.reduce((soma, m) => soma + m.quantidade, 0)}

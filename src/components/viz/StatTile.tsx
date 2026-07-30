@@ -11,7 +11,7 @@ import NumeroPopIn from './NumeroPopIn'
 export type TomTile = 'neutro' | 'critico' | 'atencao' | 'bom'
 
 const FAIXA: Record<TomTile, string> = {
-  neutro: 'bg-slate-300',
+  neutro: 'bg-marca-gradiente opacity-50',
   critico: 'bg-marca-risco',
   atencao: 'bg-conferir-border',
   bom: 'bg-ok-border',
@@ -39,10 +39,10 @@ export default function StatTile({
 }) {
   return (
     <div
-      className={`relative flex flex-col gap-0.5 overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3 ${className}`}
+      className={`cartao relative flex flex-col gap-0.5 overflow-hidden px-4 py-3 ${className}`}
     >
       <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${FAIXA[tom]}`} />
-      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-tinta-500">
         {icone && <span aria-hidden>{icone}</span>}
         {rotulo}
       </span>
@@ -52,20 +52,20 @@ export default function StatTile({
       {animarValor ? (
         <NumeroPopIn
           valor={valor}
-          className={`font-semibold text-slate-900 ${
+          className={`font-semibold text-tinta-900 ${
             destaque ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
           }`}
         />
       ) : (
         <span
-          className={`font-semibold text-slate-900 ${
+          className={`font-semibold text-tinta-900 ${
             destaque ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
           }`}
         >
           {valor}
         </span>
       )}
-      {apoio && <span className="text-xs leading-snug text-slate-500">{apoio}</span>}
+      {apoio && <span className="text-xs leading-snug text-tinta-500">{apoio}</span>}
     </div>
   )
 }

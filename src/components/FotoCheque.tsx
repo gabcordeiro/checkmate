@@ -90,8 +90,8 @@ export default function FotoCheque({
       <div
         className={
           variante === 'painel'
-            ? 'flex h-64 w-full items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400'
-            : 'flex h-12 w-20 items-center justify-center rounded border border-dashed border-slate-300 text-[10px] text-slate-400'
+            ? 'flex h-64 w-full items-center justify-center rounded-lg border border-dashed border-tinta-300 text-xs text-tinta-400'
+            : 'flex h-12 w-20 items-center justify-center rounded border border-dashed border-tinta-300 text-[10px] text-tinta-400'
         }
       >
         sem foto
@@ -106,8 +106,8 @@ export default function FotoCheque({
         onClick={() => (controlada ? undefined : setAbertaLocal(true))}
         className={
           variante === 'painel'
-            ? 'block w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100'
-            : 'group relative block h-12 w-20 shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100'
+            ? 'block w-full overflow-hidden rounded-lg border border-tinta-200 bg-tinta-100'
+            : 'group relative block h-12 w-20 shrink-0 overflow-hidden rounded border border-tinta-200 bg-tinta-100'
         }
         title="Ampliar a foto do cheque"
       >
@@ -130,7 +130,7 @@ export default function FotoCheque({
           aria-modal="true"
           aria-label={`Foto do cheque ${legenda}`}
           onClick={fechar}
-          className={`t-modal fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 p-4 ${
+          className={`t-modal fixed inset-0 z-50 flex items-center justify-center bg-tinta-950/90 p-4 ${
             fase === 'aberta' ? 'is-open' : fase === 'fechando' ? 'is-closing' : ''
           }`}
         >

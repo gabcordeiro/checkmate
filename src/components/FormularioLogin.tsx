@@ -177,8 +177,8 @@ export default function FormularioLogin() {
 
   return (
     <>
-      <h1 className="mt-2 text-2xl font-semibold">{titulo}</h1>
-      <p className="mt-2 text-sm text-slate-600">{texto}</p>
+      <h1 className="mt-6 text-2xl font-semibold tracking-tight">{titulo}</h1>
+      <p className="mt-1.5 text-sm text-tinta-600">{texto}</p>
 
       <button
         type="button"
@@ -207,10 +207,10 @@ export default function FormularioLogin() {
         Entrar com Google
       </button>
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs uppercase tracking-wide text-slate-400">ou</span>
-        <span className="h-px flex-1 bg-slate-200" />
+      <div className="my-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-tinta-200" />
+        <span className="text-xs uppercase tracking-wide text-tinta-400">ou</span>
+        <span className="h-px flex-1 bg-tinta-200" />
       </div>
 
       <form onSubmit={enviar} className="space-y-3">
@@ -272,7 +272,7 @@ export default function FormularioLogin() {
               {requisitos.map((requisito) => (
                 <li
                   key={requisito.rotulo}
-                  className={requisito.ok ? 'text-ok-text' : 'text-slate-500'}
+                  className={requisito.ok ? 'text-ok-text' : 'text-tinta-500'}
                 >
                   <span aria-hidden>{requisito.ok ? '✓' : '·'}</span> {requisito.rotulo}
                 </li>
@@ -296,7 +296,7 @@ export default function FormularioLogin() {
               <button
                 type="button"
                 onClick={() => trocarModo('criar')}
-                className="text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+                className="text-tinta-600 underline-offset-2 hover:text-tinta-900 hover:underline"
               >
                 Não tenho conta — criar uma
               </button>
@@ -305,7 +305,7 @@ export default function FormularioLogin() {
               <button
                 type="button"
                 onClick={() => trocarModo('recuperar')}
-                className="text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+                className="text-tinta-500 underline-offset-2 hover:text-tinta-900 hover:underline"
               >
                 Esqueci minha senha
               </button>
@@ -317,7 +317,7 @@ export default function FormularioLogin() {
             <button
               type="button"
               onClick={() => trocarModo('entrar')}
-              className="text-slate-600 underline-offset-2 hover:text-slate-900 hover:underline"
+              className="text-tinta-600 underline-offset-2 hover:text-tinta-900 hover:underline"
             >
               ← Já tenho conta, quero entrar
             </button>
@@ -326,7 +326,7 @@ export default function FormularioLogin() {
       </div>
 
       {!supabaseConfigurado && (
-        <p className="mt-4 text-xs leading-relaxed text-slate-500">
+        <p className="mt-4 text-xs leading-relaxed text-tinta-500">
           Setup: no Supabase, habilite os providers Email e Google em Authentication → Providers,
           e configure Site URL e Redirect URLs em Authentication → URL Configuration.
         </p>

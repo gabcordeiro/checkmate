@@ -145,9 +145,9 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
         id={`cheque-${cheque.id}`}
         className={`scroll-mt-20 px-4 py-3 ${
           cheque.status === 'vermelho'
-            ? 'border-l-4 border-l-marca-risco bg-devolve-bg/40'
+            ? 'border-l-[3px] border-l-marca-risco bg-devolve-bg/50'
             : cheque.status === 'conferir'
-              ? 'border-l-4 border-l-conferir-border'
+              ? 'border-l-[3px] border-l-conferir-border'
               : ''
         } ${cheque.lancado ? 'opacity-60' : ''}`}
       >
@@ -177,7 +177,7 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
 
   if (cheques.length === 0) {
     return (
-      <p className="cartao px-4 py-6 text-sm text-slate-600">
+      <p className="cartao px-4 py-6 text-sm text-tinta-600">
         Nenhum cheque neste lote ainda. Envie as fotos para o app extrair.
       </p>
     )
@@ -194,11 +194,7 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
               type="button"
               onClick={() => setFiltro(chave)}
               aria-pressed={filtro === chave}
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
-                filtro === chave
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100'
-              }`}
+              className={filtro === chave ? 'chip-ativo' : 'chip-inativo'}
             >
               {rotulo}
               <span className="ml-1 tabular-nums opacity-70">{contagem[chave]}</span>
@@ -206,12 +202,12 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
           ))}
         </div>
 
-        <label className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+        <label className="ml-auto flex items-center gap-1.5 text-xs text-tinta-500">
           Ordem
           <select
             value={ordem}
             onChange={(e) => setOrdem(e.target.value as Ordem)}
-            className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+            className="rounded-lg border border-tinta-300 bg-white px-2 py-1 text-xs text-tinta-700"
           >
             {ORDENS.map(({ chave, rotulo }) => (
               <option key={chave} value={chave}>
@@ -225,7 +221,7 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
       <CaixaErro mensagem={erro} />
 
       {visiveis.length === 0 ? (
-        <p className="cartao px-4 py-6 text-sm text-slate-600">
+        <p className="cartao px-4 py-6 text-sm text-tinta-600">
           Nenhum cheque nesse filtro.{' '}
           <button
             type="button"
@@ -239,9 +235,9 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
       ) : ordem === 'emitente' ? (
         grupos.map((grupo) => (
           <section key={grupo.chave} className="cartao overflow-hidden">
-            <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+            <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-tinta-100 bg-tinta-50/70 px-4 py-2.5">
               <h2 className="text-sm font-semibold uppercase tracking-wide">{grupo.rotulo}</h2>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-tinta-500">
                 {grupo.cheques.length} {grupo.cheques.length === 1 ? 'cheque' : 'cheques'}
               </span>
               {grupo.vermelhos > 0 && (
@@ -253,14 +249,14 @@ export default function TabelaLote({ cheques: iniciais }: { cheques: ChequeComFo
                 {formatarBRL(grupo.subtotal)}
               </span>
             </header>
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-tinta-100">
               {grupo.cheques.map((cheque) => corpo(cheque, false))}
             </ul>
           </section>
         ))
       ) : (
         <section className="cartao overflow-hidden">
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-tinta-100">
             {lista.map((cheque) => corpo(cheque, true))}
           </ul>
         </section>

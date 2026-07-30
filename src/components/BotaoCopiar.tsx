@@ -49,7 +49,7 @@ export default function BotaoCopiar({
           ? 'border-ok-border bg-ok-bg text-ok-text'
           : estado === 'erro'
             ? 'border-devolve-border bg-devolve-bg text-devolve-text'
-            : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100'
+            : 'border-tinta-300 bg-white text-tinta-600 hover:bg-tinta-100'
       } ${className}`}
     >
       <span className={classe}>{rotuloVisivel}</span>

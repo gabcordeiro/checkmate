@@ -14,11 +14,11 @@ export default async function NovoLotePage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
-      <Link href="/lotes" className="text-xs text-slate-500 hover:text-slate-900">
+      <Link href="/lotes" className="text-xs text-tinta-500 hover:text-tinta-900">
         ← Lotes
       </Link>
       <h1 className="mt-2 text-xl font-semibold">Novo lote</h1>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-tinta-600">
         Cada foto é lida separadamente. Foto com vários cheques empilhados funciona, mas a
         confiança da leitura cai — o app avisa quando isso acontece.
       </p>

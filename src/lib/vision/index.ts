@@ -11,6 +11,7 @@
  */
 
 import type { ChequeExtraido, Confianca, DigitoDuvidoso } from '../validation/types'
+import { candidatos, escolherMelhor, fixarModelo, listarModelos } from './gemini-modelos'
 import { PROMPT_EXTRACAO } from './prompt'
 import { paraGemini, SCHEMA_EXTRACAO } from './schema'
 
@@ -187,44 +188,111 @@ function extrairListaDeCheques(payload: unknown): ChequeExtraido[] {
 // Gemini
 // ---------------------------------------------------------------------------
 
+const BASE_GEMINI = 'https://generativelanguage.googleapis.com/v1beta'
+
+function corpoDaChamada(imagem: ImagemParaExtracao) {
+  return JSON.stringify({
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: PROMPT_EXTRACAO },
+          { inline_data: { mime_type: imagem.mimeType, data: imagem.base64 } },
+        ],
+      },
+    ],
+    generationConfig: {
+      // Leitura de dígito não é tarefa criativa.
+      temperature: 0,
+      responseMimeType: 'application/json',
+      responseSchema: paraGemini(SCHEMA_EXTRACAO),
+    },
+  })
+}
+
+interface RespostaGemini {
+  ok: boolean
+  status: number
+  texto: string
+}
+
+async function tentarModelo(
+  modelo: string,
+  imagem: ImagemParaExtracao,
+  apiKey: string,
+): Promise<RespostaGemini> {
+  const resposta = await fetch(`${BASE_GEMINI}/models/${modelo}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body: corpoDaChamada(imagem),
+  })
+  const texto = await resposta.text().catch(() => '')
+  return { ok: resposta.ok, status: resposta.status, texto }
+}
+
 async function chamarGemini(imagem: ImagemParaExtracao): Promise<unknown> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) throw new ErroVisao('GEMINI_API_KEY não configurada no servidor.', 500)
 
-  const modelo = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`
+  const tentativas = candidatos(process.env.GEMINI_MODEL)
+  let ultimoErro = ''
+  let ultimoStatus = 502
 
-  const resposta = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: PROMPT_EXTRACAO },
-            { inline_data: { mime_type: imagem.mimeType, data: imagem.base64 } },
-          ],
-        },
-      ],
-      generationConfig: {
-        // Leitura de dígito não é tarefa criativa.
-        temperature: 0,
-        responseMimeType: 'application/json',
-        responseSchema: paraGemini(SCHEMA_EXTRACAO),
-      },
-    }),
-  })
-
-  if (!resposta.ok) {
-    const detalhe = await resposta.text().catch(() => '')
-    throw new ErroVisao(`Gemini respondeu ${resposta.status}. ${detalhe.slice(0, 400)}`)
+  // 404 = aquele nome de modelo não existe (ou saiu do ar) para esta chave;
+  // seguimos para o próximo candidato. Qualquer outro erro é do pedido em si e
+  // não vai melhorar trocando de modelo.
+  for (const modelo of tentativas) {
+    const r = await tentarModelo(modelo, imagem, apiKey)
+    if (r.ok) {
+      fixarModelo(modelo)
+      return interpretarRespostaGemini(r.texto)
+    }
+    ultimoErro = r.texto
+    ultimoStatus = r.status
+    if (r.status !== 404) break
   }
 
-  const corpo = (await resposta.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+  // Todos os nomes conhecidos falharam com 404: pergunta à própria API quais
+  // modelos esta chave tem. É o que impede um rename do Google de derrubar o app.
+  if (ultimoStatus === 404) {
+    const disponiveis = await listarModelos(apiKey)
+    const melhor = escolherMelhor(disponiveis.filter((n) => !tentativas.includes(n)))
+    if (melhor) {
+      const r = await tentarModelo(melhor, imagem, apiKey)
+      if (r.ok) {
+        fixarModelo(melhor)
+        return interpretarRespostaGemini(r.texto)
+      }
+      ultimoErro = r.texto
+      ultimoStatus = r.status
+    } else if (disponiveis.length > 0) {
+      throw new ErroVisao(
+        `Nenhum modelo de visão utilizável nesta chave do Gemini. Disponíveis: ${disponiveis
+          .slice(0, 12)
+          .join(', ')}. Defina GEMINI_MODEL com um deles.`,
+        500,
+      )
+    }
   }
-  const texto = corpo.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
+
+  throw new ErroVisao(
+    `Gemini respondeu ${ultimoStatus} para os modelos ${tentativas.join(', ')}. ${ultimoErro.slice(0, 300)}`,
+    ultimoStatus === 404 ? 500 : 502,
+  )
+}
+
+function interpretarRespostaGemini(corpoBruto: string): unknown {
+  const corpo = (() => {
+    try {
+      return JSON.parse(corpoBruto) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+      }
+    } catch {
+      return null
+    }
+  })()
+
+  const texto = corpo?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   if (!texto.trim()) throw new ErroVisao('Gemini devolveu resposta vazia.')
 
   try {

@@ -42,7 +42,7 @@ function Bloco({
 }) {
   if (!valor) {
     return (
-      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-400">
+      <span className="rounded bg-tinta-100 px-1.5 py-0.5 text-xs text-tinta-400">
         bloco {numero} ilegível
       </span>
     )
@@ -111,7 +111,7 @@ export default function Cmc7({ bloco1, bloco2, bloco3, duvidosos, sugestoes }: P
               duvidosos={duvidosos}
               sugestoes={sugestoes}
             />
-            {indice < blocos.length - 1 && <span className="text-slate-300">·</span>}
+            {indice < blocos.length - 1 && <span className="text-tinta-300">·</span>}
           </span>
         ))}
       </span>

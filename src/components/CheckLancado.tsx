@@ -29,14 +29,14 @@ export default function CheckLancado({
       onClick={() => onAlternar(!marcado)}
       // `t-check` precisa ficar no mesmo elemento que carrega o aria-checked:
       // é o atributo que a regra CSS usa para soltar o traço.
-      className="t-check group flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-600 disabled:opacity-50"
+      className="t-check group flex items-center gap-1.5 whitespace-nowrap text-xs text-tinta-600 disabled:opacity-50"
       style={{ ['--check-len' as string]: '15' }}
     >
       <span
         className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
           marcado
             ? 'border-ok-text bg-ok-text'
-            : 'border-slate-300 bg-white group-hover:border-slate-400'
+            : 'border-tinta-300 bg-white group-hover:border-tinta-400'
         }`}
       >
         <svg viewBox="0 0 10.1668 10.1668" className="h-2.5 w-2.5" aria-hidden>

@@ -18,14 +18,14 @@ export default async function LotePage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
-      <Link href="/lotes" className="text-xs text-slate-500 hover:text-slate-900">
+      <Link href="/lotes" className="text-xs text-tinta-500 hover:text-tinta-900">
         ← Lotes
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">{nomeDoLote(batch)}</h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-tinta-500">
             Criado em {formatarDataBr(batch.created_at.slice(0, 10))}
           </p>
         </div>
@@ -64,7 +64,7 @@ export default async function LotePage({ params }: { params: Promise<{ id: strin
         <TabelaLote cheques={chequesComFoto} />
       </div>
 
-      <p className="mt-8 text-xs leading-relaxed text-slate-500">
+      <p className="mt-8 text-xs leading-relaxed text-tinta-500">
         O app confere; a decisão é sua. Cada alerta aponta o campo a olhar na foto — nenhum cheque
         é aprovado ou reprovado automaticamente, e você pode corrigir qualquer leitura errada
         (a validação roda de novo em cima da correção).

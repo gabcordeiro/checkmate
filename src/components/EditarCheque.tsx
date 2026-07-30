@@ -114,9 +114,9 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
     const foraDoTamanho = atual > 0 && atual !== esperado
     return (
       <label className="block">
-        <span className="text-xs font-medium text-slate-600">
+        <span className="text-xs font-medium text-tinta-600">
           {rotulo}{' '}
-          <span className={foraDoTamanho ? 'text-devolve-text' : 'text-slate-400'}>
+          <span className={foraDoTamanho ? 'text-devolve-text' : 'text-tinta-400'}>
             {atual}/{esperado}
           </span>
         </span>
@@ -133,21 +133,21 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
   return (
     <form
       onSubmit={salvar}
-      className="mt-2 rounded-lg border border-slate-300 bg-slate-50 p-3"
+      className="mt-2 rounded-lg border border-tinta-300 bg-tinta-50 p-3"
       onKeyDown={(e) => {
         // Não deixa os atalhos do modo conferência disparar enquanto digita.
         e.stopPropagation()
         if (e.key === 'Escape') onCancelar()
       }}
     >
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-tinta-600">
         Corrija o que o modelo leu errado. Ao salvar, a validação roda de novo — DV do CMC7,
         extenso × numérico e datas.
       </p>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Emitente</span>
+          <span className="text-xs font-medium text-tinta-600">Emitente</span>
           <input
             value={form.emitente}
             onChange={(e) => alterar('emitente', e.target.value)}
@@ -155,7 +155,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Nominal</span>
+          <span className="text-xs font-medium text-tinta-600">Nominal</span>
           <input
             value={form.nominal}
             onChange={(e) => alterar('nominal', e.target.value)}
@@ -163,7 +163,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Nº do cheque</span>
+          <span className="text-xs font-medium text-tinta-600">Nº do cheque</span>
           <input
             value={form.numero_cheque}
             onChange={(e) => alterar('numero_cheque', e.target.value.replace(/\D/g, ''))}
@@ -172,7 +172,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Valor em algarismos</span>
+          <span className="text-xs font-medium text-tinta-600">Valor em algarismos</span>
           <input
             value={form.valor_numerico}
             onChange={(e) => alterar('valor_numerico', e.target.value)}
@@ -182,7 +182,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs font-medium text-slate-600">
+          <span className="text-xs font-medium text-tinta-600">
             Valor por extenso (transcreva literal, com os erros do emitente)
           </span>
           <input
@@ -192,7 +192,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Data escrita no cheque</span>
+          <span className="text-xs font-medium text-tinta-600">Data escrita no cheque</span>
           <input
             type="date"
             value={form.data_emissao}
@@ -201,7 +201,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-medium text-slate-600">Bom para (se anotado)</span>
+          <span className="text-xs font-medium text-tinta-600">Bom para (se anotado)</span>
           <input
             type="date"
             value={form.bom_para}
@@ -218,12 +218,12 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
       </div>
 
       <details className="mt-3">
-        <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-900">
+        <summary className="cursor-pointer text-xs text-tinta-500 hover:text-tinta-900">
           Banco, agência e conta
         </summary>
         <div className="mt-2 grid gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className="text-xs font-medium text-slate-600">Banco</span>
+            <span className="text-xs font-medium text-tinta-600">Banco</span>
             <input
               value={form.banco_codigo}
               onChange={(e) => alterar('banco_codigo', e.target.value.replace(/\D/g, ''))}
@@ -232,7 +232,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-slate-600">Agência</span>
+            <span className="text-xs font-medium text-tinta-600">Agência</span>
             <input
               value={form.agencia}
               onChange={(e) => alterar('agencia', e.target.value.replace(/\D/g, ''))}
@@ -241,7 +241,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
             />
           </label>
           <label className="block">
-            <span className="text-xs font-medium text-slate-600">Conta</span>
+            <span className="text-xs font-medium text-tinta-600">Conta</span>
             <input
               value={form.conta}
               onChange={(e) => alterar('conta', e.target.value.replace(/\D/g, ''))}
@@ -257,7 +257,7 @@ export default function EditarCheque({ cheque, onSalvo, onCancelar }: Props) {
           type="checkbox"
           checked={form.assinatura_presente}
           onChange={(e) => alterar('assinatura_presente', e.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
+          className="h-4 w-4 rounded border-tinta-300"
         />
         Assinatura presente na foto
       </label>

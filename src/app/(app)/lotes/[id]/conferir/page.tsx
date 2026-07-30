@@ -13,7 +13,7 @@ export default async function ConferirPage({ params }: { params: Promise<{ id: s
   return (
     <main className="mx-auto max-w-5xl px-4 py-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <Link href={`/lotes/${id}`} className="text-xs text-slate-500 hover:text-slate-900">
+        <Link href={`/lotes/${id}`} className="text-xs text-tinta-500 hover:text-tinta-900">
           ← Voltar ao lote
         </Link>
         <h1 className="sr-only">Modo conferência</h1>

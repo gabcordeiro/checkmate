@@ -256,12 +256,12 @@ export default function UploadLote({ usuarioId }: { usuarioId: string }) {
           setArrastando(false)
           void adicionar(e.dataTransfer.files)
         }}
-        className={`rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
-          arrastando ? 'border-slate-500 bg-slate-100' : 'border-slate-300 bg-white'
+        className={`t-reveal t-reveal-1 rounded-2xl border-2 border-dashed px-4 py-10 text-center backdrop-blur-sm transition-colors ${
+          arrastando ? 'border-marca-400 bg-marca-50' : 'border-tinta-200 bg-white/70'
         }`}
       >
         <p className="text-sm font-medium">Arraste as fotos aqui</p>
-        <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-slate-500">
+        <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-tinta-500">
           {DICA_FOTO} Fotos com menos de {LADO_MINIMO}px no lado menor recebem um aviso — você
           decide se manda outra ou segue.
         </p>
@@ -290,25 +290,25 @@ export default function UploadLote({ usuarioId }: { usuarioId: string }) {
           {fila.map((item) => (
             <li
               key={item.id}
-              className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${
+              className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 shadow-sm ${
                 item.situacao === 'erro'
                   ? 'border-devolve-border bg-devolve-bg'
                   : item.situacao === 'baixa_qualidade'
                     ? 'border-conferir-border bg-conferir-bg'
                     : item.situacao === 'pronto'
                       ? 'border-ok-border bg-ok-bg'
-                      : 'border-slate-200 bg-white'
+                      : 'border-white/60 bg-white/80'
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.previa}
                 alt=""
-                className="h-12 w-20 shrink-0 rounded border border-slate-200 object-cover"
+                className="h-12 w-20 shrink-0 rounded border border-tinta-200 object-cover"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.arquivo.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-tinta-500">
                   {item.dimensoes
                     ? `${item.dimensoes.largura}×${item.dimensoes.altura}px`
                     : 'medindo…'}
@@ -358,7 +358,7 @@ export default function UploadLote({ usuarioId }: { usuarioId: string }) {
                 <button
                   type="button"
                   onClick={() => remover(item.id)}
-                  className="shrink-0 text-xs text-slate-400 hover:text-slate-700"
+                  className="shrink-0 text-xs text-tinta-400 hover:text-tinta-700"
                 >
                   remover
                 </button>

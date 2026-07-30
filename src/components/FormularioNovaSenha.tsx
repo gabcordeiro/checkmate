@@ -68,7 +68,7 @@ export default function FormularioNovaSenha({ email }: { email: string | null })
   return (
     <form onSubmit={enviar} className="mt-6 space-y-3">
       {email && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-tinta-600">
           Definindo a senha de <strong className="font-medium">{email}</strong>.
         </p>
       )}
@@ -100,7 +100,7 @@ export default function FormularioNovaSenha({ email }: { email: string | null })
 
       <ul className="space-y-0.5 text-xs">
         {requisitos.map((requisito) => (
-          <li key={requisito.rotulo} className={requisito.ok ? 'text-ok-text' : 'text-slate-500'}>
+          <li key={requisito.rotulo} className={requisito.ok ? 'text-ok-text' : 'text-tinta-500'}>
             <span aria-hidden>{requisito.ok ? '✓' : '·'}</span> {requisito.rotulo}
           </li>
         ))}

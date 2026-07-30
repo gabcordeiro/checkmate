@@ -82,7 +82,7 @@ export default async function LotesPage({
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Lotes</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Lotes</h1>
         <Link href="/lotes/novo" className="btn-primario px-3 py-1.5 text-xs">
           Novo lote
         </Link>
@@ -113,7 +113,7 @@ export default async function LotesPage({
       )}
 
       {lotes.length === 0 ? (
-        <p className="mt-6 cartao px-4 py-8 text-center text-sm text-slate-600">
+        <p className="mt-6 cartao px-4 py-8 text-center text-sm text-tinta-600">
           {termo
             ? 'Nenhum lote encontrado para essa busca.'
             : 'Nenhum lote ainda. Comece enviando as fotos de uma operação.'}
@@ -124,18 +124,18 @@ export default async function LotesPage({
             <li key={lote.id}>
               <Link
                 href={`/lotes/${lote.id}`}
-                className="cartao flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 transition hover:border-slate-300 hover:shadow"
+                className="cartao t-reveal flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:border-marca-200 hover:shadow-cartaAlta"
               >
                 <span className="font-medium">
                   {lote.nome?.trim() || `Lote de ${formatarDataBr(lote.created_at.slice(0, 10))}`}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-tinta-500">
                   {formatarDataBr(lote.created_at.slice(0, 10))}
                 </span>
-                <span className="ml-auto text-sm text-slate-600">
+                <span className="ml-auto text-sm text-tinta-600">
                   {lote.total_cheques} {lote.total_cheques === 1 ? 'cheque' : 'cheques'}
                 </span>
-                <span className="w-28 text-right text-sm font-semibold">
+                <span className="w-28 text-right text-sm font-semibold tabular-nums">
                   {formatarBRL(Number(lote.total_valor))}
                 </span>
               </Link>

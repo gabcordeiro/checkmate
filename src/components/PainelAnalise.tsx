@@ -24,14 +24,14 @@ function Medidor({ feitos, total }: { feitos: number; total: number }) {
   const completo = total > 0 && feitos === total
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+    <div className="cartao px-4 py-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-slate-500">Lançados no sistema</span>
-        <span className="text-xs tabular-nums text-slate-500">{pct}%</span>
+        <span className="text-xs font-medium text-tinta-500">Lançados no sistema</span>
+        <span className="text-xs tabular-nums text-tinta-500">{pct}%</span>
       </div>
       <p className="mt-0.5 text-lg font-semibold tabular-nums">
         {feitos}
-        <span className="text-slate-400"> / {total}</span>
+        <span className="text-tinta-400"> / {total}</span>
       </p>
       <div
         role="progressbar"
@@ -39,16 +39,16 @@ function Medidor({ feitos, total }: { feitos: number; total: number }) {
         aria-valuemin={0}
         aria-valuemax={total}
         aria-label="Cheques lançados no sistema"
-        className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200"
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-tinta-200"
       >
         <span
           className={`block h-full rounded-full transition-all ${
-            completo ? 'bg-ok-text' : 'bg-slate-700'
+            completo ? 'bg-ok-text' : 'bg-marca-gradiente'
           }`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">
+      <p className="mt-1.5 text-xs text-tinta-500">
         {completo
           ? 'Lote inteiro lançado.'
           : `Faltam ${total - feitos} ${total - feitos === 1 ? 'cheque' : 'cheques'}.`}
@@ -111,8 +111,8 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
       </div>
 
       {janela && (
-        <p className="text-xs text-slate-500">
-          Vencimentos de <strong className="font-medium text-slate-700">{janela}</strong>
+        <p className="text-xs text-tinta-500">
+          Vencimentos de <strong className="font-medium text-tinta-700">{janela}</strong>
           {semData.cheques > 0 && (
             <>
               {' · '}
@@ -127,10 +127,10 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
 
       <Cronograma meses={cronograma} />
 
-      <section className="cartao overflow-hidden">
-        <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-200 px-4 py-2.5">
+      <section className="cartao-destaque">
+        <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-tinta-100 px-4 py-3">
           <h2 className="text-sm font-semibold">O que apareceu neste lote</h2>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-tinta-500">
             {resumo.vermelhos} {resumo.vermelhos === 1 ? 'alerta vermelho' : 'alertas vermelhos'} ·{' '}
             {resumo.amarelos} {resumo.amarelos === 1 ? 'amarelo' : 'amarelos'}
           </span>
@@ -141,13 +141,13 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
             Nenhum alerta. Ainda assim, confira a foto de cada cheque antes de lançar.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-tinta-100">
             {alertasPorTipo.map((grupo) => (
               <li key={grupo.codigo}>
                 <details className="group">
                   <summary
-                    className={`flex cursor-pointer flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2.5 text-sm hover:bg-slate-50 ${
-                      grupo.nivel === 'vermelho' ? 'border-l-4 border-l-marca-risco' : ''
+                    className={`flex cursor-pointer flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2.5 text-sm hover:bg-tinta-50 ${
+                      grupo.nivel === 'vermelho' ? 'border-l-[3px] border-l-marca-risco' : ''
                     }`}
                   >
                     <span aria-hidden>{grupo.nivel === 'vermelho' ? '🔴' : '🟡'}</span>
@@ -158,22 +158,22 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
                     >
                       {grupo.titulo}
                     </strong>
-                    <span className="rounded-full bg-slate-100 px-1.5 text-xs font-medium tabular-nums text-slate-600">
+                    <span className="rounded-full bg-tinta-100 px-1.5 text-xs font-medium tabular-nums text-tinta-600">
                       ×{grupo.quantidade}
                     </span>
-                    <span className="ml-auto text-xs tabular-nums text-slate-500">
+                    <span className="ml-auto text-xs tabular-nums text-tinta-500">
                       {formatarBRL(grupo.valorAfetado)}
                     </span>
                   </summary>
 
                   <div className="px-4 pb-3 pl-9">
-                    <p className="text-xs leading-relaxed text-slate-600">{grupo.exemplo}</p>
+                    <p className="text-xs leading-relaxed text-tinta-600">{grupo.exemplo}</p>
                     <p className="mt-1.5 flex flex-wrap gap-1.5">
                       {grupo.chequeIds.map((id, indice) => (
                         <a
                           key={id}
                           href={`#cheque-${id}`}
-                          className="rounded border border-slate-200 px-1.5 py-0.5 text-xs text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                          className="rounded border border-tinta-200 px-1.5 py-0.5 text-xs text-tinta-600 hover:border-tinta-400 hover:text-tinta-900"
                         >
                           ir ao cheque {indice + 1}
                         </a>

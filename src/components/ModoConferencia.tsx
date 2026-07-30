@@ -262,7 +262,7 @@ export default function ModoConferencia({
 
   if (cheques.length === 0) {
     return (
-      <div className="cartao px-4 py-8 text-center text-sm text-slate-600">
+      <div className="cartao px-4 py-8 text-center text-sm text-tinta-600">
         Este lote não tem cheques.{' '}
         <Link href={`/lotes/${loteId}`} className="underline">
           Voltar ao lote
@@ -304,9 +304,9 @@ export default function ModoConferencia({
         <div className="flex items-baseline gap-2">
           <span className="text-lg font-semibold tabular-nums">
             {indice + 1}
-            <span className="text-slate-400"> / {visiveis.length}</span>
+            <span className="text-tinta-400"> / {visiveis.length}</span>
           </span>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-tinta-500">
             {lancadosNaFila} lançados nesta fila · {nomeLote}
           </span>
         </div>
@@ -318,11 +318,7 @@ export default function ModoConferencia({
               type="button"
               onClick={() => trocarFila(chave)}
               aria-pressed={fila === chave}
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
-                fila === chave
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100'
-              }`}
+              className={fila === chave ? 'chip-ativo' : 'chip-inativo'}
             >
               {rotulo}
             </button>
@@ -332,7 +328,7 @@ export default function ModoConferencia({
         <button
           type="button"
           onClick={() => setAtalhosVisiveis((v) => !v)}
-          className="ml-auto text-xs text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+          className="ml-auto text-xs text-tinta-500 underline-offset-2 hover:text-tinta-900 hover:underline"
         >
           Atalhos (?)
         </button>
@@ -344,24 +340,24 @@ export default function ModoConferencia({
         aria-valuemin={1}
         aria-valuemax={visiveis.length}
         aria-label="Posição na fila de conferência"
-        className="h-1 overflow-hidden rounded-full bg-slate-200"
+        className="h-1.5 overflow-hidden rounded-full bg-tinta-200"
       >
         <span
-          className="block h-full rounded-full bg-slate-700 transition-all"
+          className="block h-full rounded-full bg-marca-gradiente transition-all"
           style={{ width: `${((indice + 1) / visiveis.length) * 100}%` }}
         />
       </div>
 
       {atalhosVisiveis && (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs sm:grid-cols-3">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-tinta-200 bg-white px-4 py-3 text-xs sm:grid-cols-3">
           {ATALHOS.map(([tecla, acao]) => (
             <div key={tecla} className="flex items-baseline gap-2">
               <dt>
-                <kbd className="rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-[11px]">
+                <kbd className="rounded border border-tinta-300 bg-tinta-50 px-1.5 py-0.5 font-mono text-[11px]">
                   {tecla}
                 </kbd>
               </dt>
-              <dd className="text-slate-600">{acao}</dd>
+              <dd className="text-tinta-600">{acao}</dd>
             </div>
           ))}
         </dl>
@@ -406,7 +402,7 @@ export default function ModoConferencia({
               <p className="text-sm font-semibold uppercase tracking-wide">
                 {atual.emitente?.trim() || 'Emitente não identificado'}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-tinta-500">
                 {atual.banco_nome || atual.banco_codigo || 'banco não lido'}
                 {atual.agencia ? ` · ag ${atual.agencia}` : ''}
                 {atual.conta ? ` · cc ${atual.conta}` : ''}
@@ -416,17 +412,17 @@ export default function ModoConferencia({
             <StatusBadge status={atual.status} />
           </div>
 
-          <dl className="grid grid-cols-3 gap-3 border-y border-slate-100 py-3">
+          <dl className="grid grid-cols-3 gap-3 border-y border-tinta-100 py-3">
             <div>
-              <dt className="text-[11px] font-medium text-slate-500">Nº do cheque</dt>
+              <dt className="text-[11px] font-medium text-tinta-500">Nº do cheque</dt>
               <dd className="text-sm font-medium tabular-nums">{atual.numero_cheque ?? '—'}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium text-slate-500">Data efetiva</dt>
+              <dt className="text-[11px] font-medium text-tinta-500">Data efetiva</dt>
               <dd className="text-sm font-medium tabular-nums">{dataTexto}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium text-slate-500">Valor</dt>
+              <dt className="text-[11px] font-medium text-tinta-500">Valor</dt>
               <dd className="text-sm font-semibold tabular-nums">
                 {formatarBRL(
                   atual.valor_numerico === null ? null : Number(atual.valor_numerico),
@@ -436,7 +432,7 @@ export default function ModoConferencia({
           </dl>
 
           <div>
-            <p className="mb-1 text-[11px] font-medium text-slate-500">CMC7</p>
+            <p className="mb-1 text-[11px] font-medium text-tinta-500">CMC7</p>
             <Cmc7
               bloco1={atual.cmc7_bloco1}
               bloco2={atual.cmc7_bloco2}
@@ -482,7 +478,7 @@ export default function ModoConferencia({
           </div>
 
           {atual.valor_extenso_texto && (
-            <p className="text-xs italic text-slate-500">
+            <p className="text-xs italic text-tinta-500">
               Extenso lido: “{atual.valor_extenso_texto}”
               {atual.valor_extenso_convertido !== null && (
                 <> → {formatarBRL(Number(atual.valor_extenso_convertido))}</>
@@ -531,7 +527,7 @@ export default function ModoConferencia({
               />
             </PainelDeslizante>
           ) : (
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <div className="flex flex-wrap items-center gap-2 border-t border-tinta-100 pt-3">
               <button
                 type="button"
                 onClick={() => {
@@ -590,7 +586,7 @@ export default function ModoConferencia({
         className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2"
       >
         <span
-          className={`t-toast block rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg ${
+          className={`t-toast block rounded-full bg-tinta-950 px-3.5 py-2 text-xs font-medium text-white shadow-lg ${
             aviso ? 'is-open' : ''
           }`}
         >

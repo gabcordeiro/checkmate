@@ -71,15 +71,15 @@ export default function LinhaCheque({
       <div className="w-full min-w-0 space-y-1.5 sm:order-2 sm:w-auto sm:flex-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
           {compacta && (
-            <span className="font-medium uppercase tracking-wide text-slate-500">
+            <span className="font-medium uppercase tracking-wide text-tinta-500">
               {cheque.emitente?.trim() || 'sem emitente'}
             </span>
           )}
           <span className="font-medium tabular-nums">nº {cheque.numero_cheque ?? '—'}</span>
-          <span className="tabular-nums text-slate-600">
+          <span className="tabular-nums text-tinta-600">
             {dataEfetiva}
             {cheque.bom_para && cheque.bom_para !== cheque.data_emissao && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-tinta-400">
                 {' '}
                 (bom p/ {formatarDataBr(cheque.bom_para)} · cheque{' '}
                 {formatarDataBr(cheque.data_emissao)})
@@ -89,13 +89,13 @@ export default function LinhaCheque({
           <span className="font-semibold tabular-nums">
             {formatarBRL(cheque.valor_numerico === null ? null : Number(cheque.valor_numerico))}
           </span>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-tinta-500">
             {cheque.banco_nome || cheque.banco_codigo || '—'}
             {cheque.agencia ? ` · ag ${cheque.agencia}` : ''}
             {cheque.conta ? ` · cc ${cheque.conta}` : ''}
           </span>
           {cheque.revisado_manualmente && (
-            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+            <span className="rounded-full bg-tinta-100 px-1.5 py-0.5 text-[10px] font-medium text-tinta-600">
               revisado por você
             </span>
           )}
@@ -126,7 +126,7 @@ export default function LinhaCheque({
         )}
 
         {cheque.valor_extenso_texto && (
-          <p className="text-xs italic text-slate-500">
+          <p className="text-xs italic text-tinta-500">
             Extenso lido: “{cheque.valor_extenso_texto}”
             {cheque.valor_extenso_convertido !== null && (
               <> → {formatarBRL(Number(cheque.valor_extenso_convertido))}</>
@@ -141,7 +141,7 @@ export default function LinhaCheque({
           <button
             type="button"
             onClick={onEditar}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            className="rounded-md border border-tinta-300 bg-white px-2 py-1 text-xs font-medium text-tinta-600 hover:bg-tinta-100"
           >
             Corrigir
           </button>
