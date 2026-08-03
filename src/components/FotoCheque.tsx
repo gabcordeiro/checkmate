@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Portal from './Portal'
 
 /**
  * A foto do cheque, em duas variantes:
@@ -125,32 +126,37 @@ export default function FotoCheque({
       </button>
 
       {montada && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Foto do cheque ${legenda}`}
-          onClick={fechar}
-          className={`t-modal fixed inset-0 z-50 flex items-center justify-center bg-tinta-950/90 p-4 ${
-            fase === 'aberta' ? 'is-open' : fase === 'fechando' ? 'is-closing' : ''
-          }`}
-        >
-          <div className="max-h-full max-w-5xl overflow-auto" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={url}
-              alt={`Foto ampliada do cheque ${legenda}`}
-              className="max-w-none rounded-lg bg-white shadow-2xl"
-              style={{ width: 'min(1600px, 220vw)' }}
-            />
-          </div>
-          <button
-            type="button"
+        <Portal>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Foto do cheque ${legenda}`}
             onClick={fechar}
-            className="absolute right-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium"
+            className={`t-modal fixed inset-0 z-50 flex items-center justify-center bg-tinta-950/90 p-4 ${
+              fase === 'aberta' ? 'is-open' : fase === 'fechando' ? 'is-closing' : ''
+            }`}
           >
-            Fechar (Esc)
-          </button>
-        </div>
+            <div
+              className="max-h-full max-w-5xl overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt={`Foto ampliada do cheque ${legenda}`}
+                className="max-w-none rounded-lg bg-white shadow-2xl"
+                style={{ width: 'min(1600px, 220vw)' }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={fechar}
+              className="absolute right-4 top-4 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium"
+            >
+              Fechar (Esc)
+            </button>
+          </div>
+        </Portal>
       )}
     </>
   )

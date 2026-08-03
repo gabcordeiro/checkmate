@@ -4,6 +4,7 @@ import BotaoCopiar from './BotaoCopiar'
 import CheckLancado from './CheckLancado'
 import Cmc7 from './Cmc7'
 import FotoCheque from './FotoCheque'
+import ListaAlertas from './ListaAlertas'
 import StatusBadge from './StatusBadge'
 import { formatarBRL } from '@/lib/format'
 import { formatarDataBr } from '@/lib/validation/datas'
@@ -109,21 +110,7 @@ export default function LinhaCheque({
           sugestoes={cheque.cmc7_sugestoes ?? []}
         />
 
-        {(cheque.alertas ?? []).length > 0 && (
-          <ul className="space-y-0.5 pt-0.5">
-            {cheque.alertas.map((alerta, indice) => (
-              <li
-                key={`${alerta.codigo}-${indice}`}
-                className={`text-xs leading-relaxed ${
-                  alerta.nivel === 'vermelho' ? 'text-devolve-text' : 'text-conferir-text'
-                }`}
-              >
-                <span aria-hidden>{alerta.nivel === 'vermelho' ? '🔴' : '🟡'}</span>{' '}
-                <strong>{alerta.titulo}.</strong> {alerta.detalhe}
-              </li>
-            ))}
-          </ul>
-        )}
+        <ListaAlertas alertas={cheque.alertas ?? []} />
 
         {cheque.valor_extenso_texto && (
           <p className="text-xs italic text-tinta-500">

@@ -1,5 +1,6 @@
 import { formatarBRL } from '@/lib/format'
 import { rotuloDoMes, type AnaliseLote } from '@/lib/analise'
+import ExplicacaoAlerta from './ExplicacaoAlerta'
 import StatTile from './viz/StatTile'
 import Cronograma from './viz/Cronograma'
 
@@ -161,6 +162,15 @@ export default function PainelAnalise({ analise }: { analise: AnaliseLote }) {
                     <span className="rounded-full bg-tinta-100 px-1.5 text-xs font-medium tabular-nums text-tinta-600">
                       ×{grupo.quantidade}
                     </span>
+                    <ExplicacaoAlerta
+                      alerta={{
+                        nivel: grupo.nivel,
+                        codigo: grupo.codigo,
+                        titulo: grupo.titulo,
+                        detalhe: grupo.exemplo,
+                        dados: grupo.dados,
+                      }}
+                    />
                     <span className="ml-auto text-xs tabular-nums text-tinta-500">
                       {formatarBRL(grupo.valorAfetado)}
                     </span>

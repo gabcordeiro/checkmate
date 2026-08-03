@@ -23,6 +23,21 @@ export type NumeroBloco = 1 | 2 | 3
 
 export const TAMANHO_BLOCO: Record<NumeroBloco, number> = { 1: 8, 2: 12, 3: 10 }
 
+/**
+ * Como o bloco é chamado na tela. "Bloco 2" não diz nada para quem confere;
+ * "2º grupo (número do cheque)" diz onde olhar na tarja.
+ */
+export const NOME_BLOCO: Record<NumeroBloco, string> = {
+  1: '1º grupo (banco e agência)',
+  2: '2º grupo (número do cheque)',
+  3: '3º grupo (conta)',
+}
+
+/** "7º" — para apontar a posição do dígito sem falar em índice. */
+export function ordinal(posicao: number): string {
+  return `${posicao}º`
+}
+
 export function somenteDigitos(valor: string | null | undefined): string {
   return (valor ?? '').replace(/\D/g, '')
 }

@@ -17,6 +17,7 @@ import {
   bancoDoBloco1,
   checarBloco,
   combinacoesQueFecham,
+  NOME_BLOCO,
   somenteDigitos,
   type NumeroBloco,
 } from './cmc7'
@@ -89,9 +90,10 @@ function validarCmc7(
       alertas.push({
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_ausente`,
-        titulo: `Bloco ${numero} do CMC7 não foi lido`,
-        detalhe: 'Refotografe o cheque de perto, com a tarja do CMC7 nítida e sem reflexo.',
+        titulo: `Não deu para ler o ${NOME_BLOCO[numero]} do CMC7`,
+        detalhe: `O CMC7 é a fileira de números no rodapé do cheque. Essa parte não saiu legível na foto. Tire outra foto de perto, com o rodapé nítido e sem reflexo.`,
         campo: `cmc7_bloco${numero}`,
+        dados: { bloco: numero },
       })
       continue
     }
@@ -100,9 +102,14 @@ function validarCmc7(
       alertas.push({
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_tamanho`,
-        titulo: `Bloco ${numero} com ${checagem.digitos.length} dígitos (esperado ${checagem.tamanhoEsperado})`,
-        detalhe: 'Falta ou sobra dígito na leitura. Confira contra a tarja da foto antes de lançar.',
+        titulo: `Faltou ou sobrou número no ${NOME_BLOCO[numero]} do CMC7`,
+        detalhe: `Foram lidos ${checagem.digitos.length} números, mas esse grupo tem sempre ${checagem.tamanhoEsperado}. Confira contando na foto, no rodapé do cheque.`,
         campo: `cmc7_bloco${numero}`,
+        dados: {
+          bloco: numero,
+          lidos: checagem.digitos.length,
+          esperados: checagem.tamanhoEsperado,
+        },
       })
     }
 
@@ -138,17 +145,23 @@ function validarCmc7(
             .map((a) => somenteDigitos(a))
             .filter((a) => a.length === 1 && a !== e.digito)
           return outros.length
-            ? `posição ${e.posicao}: provavelmente ${e.digito} — com ${outros.join('/')} o verificador não bate`
-            : `posição ${e.posicao}: ${e.digito}`
+            ? `o ${e.posicao}º número parecia ${outros.join(' ou ')} na foto, mas é ${e.digito} — só com ${e.digito} a conta de conferência fecha`
+            : `o ${e.posicao}º número é ${e.digito}`
         })
         .join('; ')
 
       alertas.push({
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_dv_resolvido`,
-        titulo: `Bloco ${numero}: dígito duvidoso resolvido pelo verificador`,
-        detalhe: `${resumo}. Bloco sugerido: ${combinacao.blocoCorrigido}`,
+        titulo: 'Corrigimos um número do CMC7 para você',
+        detalhe: `No ${NOME_BLOCO[numero]}, ${resumo}. O CMC7 na tela já está corrigido — pode copiar.`,
         campo: `cmc7_bloco${numero}`,
+        dados: {
+          bloco: numero,
+          posicao: combinacao.escolhas[0]?.posicao ?? 0,
+          corrigido: combinacao.blocoCorrigido,
+          original: checagem.digitos,
+        },
       })
       continue
     }
@@ -157,7 +170,7 @@ function validarCmc7(
       alertas.push({
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_dv_ambiguo`,
-        titulo: `Bloco ${numero}: mais de uma leitura fecha o verificador`,
+        titulo: `Duas leituras possíveis no ${NOME_BLOCO[numero]} do CMC7`,
         detalhe: `Candidatos: ${combinacoes
           .slice(0, 6)
           .map((c) => c.blocoCorrigido)
@@ -170,9 +183,15 @@ function validarCmc7(
     alertas.push({
       nivel: 'amarelo',
       codigo: `cmc7_bloco${numero}_dv_invalido`,
-      titulo: `Bloco ${numero}: dígito verificador não fecha`,
-      detalhe: `Lido ${checagem.dvLido}, calculado ${checagem.dvEsperado}. Nenhuma alternativa de leitura fecha o verificador — refotografe o cheque.`,
+      titulo: `Algum número do ${NOME_BLOCO[numero]} do CMC7 foi lido errado`,
+      detalhe: `O último número desse grupo é de conferência: ele tem que bater com uma conta feita a partir dos outros. Na foto ele está ${checagem.dvLido}, mas a conta dá ${checagem.dvEsperado} — ou seja, algum número do grupo saiu errado na leitura. Confira no rodapé do cheque; se não der para ler, tire outra foto.`,
       campo: `cmc7_bloco${numero}`,
+      dados: {
+        bloco: numero,
+        naFoto: checagem.dvLido ?? '—',
+        pelaConta: checagem.dvEsperado ?? '—',
+        grupoLido: checagem.digitos,
+      },
     })
   }
 }
@@ -193,9 +212,10 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
       alertas.push({
         nivel: 'amarelo',
         codigo: 'cruzamento_banco',
-        titulo: 'Banco do CMC7 não bate com o impresso',
-        detalhe: `Cabeçalho: ${bancoImpresso} · CMC7 bloco 1: ${bancoCmc7}. Provável erro de leitura.`,
+        titulo: 'O banco impresso e o do CMC7 são diferentes',
+        detalhe: `No alto do cheque está o banco ${bancoImpresso}, mas o CMC7 do rodapé diz ${bancoCmc7}. Um dos dois foi lido errado — confira na foto.`,
         campo: 'banco_codigo',
+        dados: { impresso: bancoImpresso, noCmc7: bancoCmc7 },
       })
     }
   }
@@ -207,9 +227,10 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
       alertas.push({
         nivel: 'amarelo',
         codigo: 'cruzamento_agencia',
-        titulo: 'Agência do CMC7 não bate com a impressa',
-        detalhe: `Cabeçalho: ${agenciaImpressa} · CMC7 bloco 1: ${agenciaCmc7}. Provável erro de leitura.`,
+        titulo: 'A agência impressa e a do CMC7 são diferentes',
+        detalhe: `No alto do cheque está a agência ${agenciaImpressa}, mas o CMC7 do rodapé diz ${agenciaCmc7}. Um dos dois foi lido errado — confira na foto.`,
         campo: 'agencia',
+        dados: { impresso: agenciaImpressa, noCmc7: agenciaCmc7 },
       })
     }
   }
@@ -219,9 +240,10 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
     alertas.push({
       nivel: 'amarelo',
       codigo: 'cruzamento_numero_cheque',
-      titulo: 'Número do cheque não aparece no CMC7',
-      detalhe: `Impresso: ${numeroImpresso} · CMC7 bloco 2: ${bloco2}. Provável erro de leitura em um dos dois.`,
+      titulo: 'O nº do cheque não aparece dentro do CMC7',
+      detalhe: `O número impresso é ${numeroImpresso}, mas ele não aparece no 2º grupo do CMC7 (${bloco2}), onde deveria estar. Um dos dois foi lido errado.`,
       campo: 'numero_cheque',
+      dados: { impresso: numeroImpresso, noCmc7: bloco2 },
     })
   }
 
@@ -230,9 +252,10 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
     alertas.push({
       nivel: 'amarelo',
       codigo: 'cruzamento_conta',
-      titulo: 'Conta não aparece no CMC7',
-      detalhe: `Impressa: ${contaImpressa} · CMC7 bloco 3: ${bloco3}. Provável erro de leitura em um dos dois.`,
+      titulo: 'A conta não aparece dentro do CMC7',
+      detalhe: `A conta impressa é ${contaImpressa}, mas ela não aparece no 3º grupo do CMC7 (${bloco3}), onde deveria estar. Um dos dois foi lido errado.`,
       campo: 'conta',
+      dados: { impresso: contaImpressa, noCmc7: bloco3 },
     })
   }
 }
@@ -255,8 +278,8 @@ function validarValores(
     alertas.push({
       nivel: 'amarelo',
       codigo: 'valor_numerico_ausente',
-      titulo: 'Valor em algarismos não foi lido',
-      detalhe: 'Confira o valor na foto — sem ele não é possível cruzar com o extenso.',
+      titulo: 'Não conseguimos ler o valor em números',
+      detalhe: 'Sem ele não dá para comparar com o valor por extenso, que é a comparação que evita devolução. Confira na foto e corrija aqui.',
       campo: 'valor_numerico',
     })
   }
@@ -265,7 +288,7 @@ function validarValores(
     alertas.push({
       nivel: 'amarelo',
       codigo: 'valor_extenso_ausente',
-      titulo: 'Valor por extenso não foi lido',
+      titulo: 'Não conseguimos ler o valor por extenso',
       detalhe:
         'Sem o extenso não dá para checar a divergência que faz o banco devolver. Confira no olho.',
       campo: 'valor_extenso_texto',
@@ -277,8 +300,9 @@ function validarValores(
     alertas.push({
       nivel: 'amarelo',
       codigo: 'valor_extenso_ilegivel',
-      titulo: 'Extenso não pôde ser interpretado',
-      detalhe: `Transcrição: "${cheque.valor_extenso_texto.trim()}". Confira o extenso no olho contra o valor em algarismos.`,
+      titulo: 'O valor por extenso não deu para interpretar',
+      detalhe: `Lemos "${cheque.valor_extenso_texto.trim()}" e não conseguimos transformar isso num valor. Confira você mesma se o extenso bate com o número.`,
+      dados: { transcricao: cheque.valor_extenso_texto.trim() },
       campo: 'valor_extenso_texto',
     })
     return { valorExtensoConvertido: null }
@@ -288,7 +312,7 @@ function validarValores(
     alertas.push({
       nivel: 'amarelo',
       codigo: 'valor_extenso_parcial',
-      titulo: 'Extenso com palavras não reconhecidas',
+      titulo: 'Há palavras que não entendemos no valor por extenso',
       detalhe: `Ignoradas: ${extenso.palavrasIgnoradas.join(', ')}. O valor interpretado (${formatarBRL(
         extenso.valor,
       )}) pode estar incompleto.`,
@@ -300,11 +324,16 @@ function validarValores(
     alertas.push({
       nivel: 'vermelho',
       codigo: 'extenso_divergente',
-      titulo: 'Banco devolve: extenso divergente do numérico',
-      detalhe: `Extenso indica ${formatarBRL(extenso.valor)}, numérico indica ${formatarBRL(
+      titulo: 'O banco vai devolver: os dois valores não batem',
+      detalhe: `Por extenso está escrito ${formatarBRL(extenso.valor)} e em números ${formatarBRL(
         numerico,
-      )}. Vale o extenso (Lei do Cheque, art. 12).`,
+      )}. Quando os dois discordam, o banco paga o que está por extenso (Lei do Cheque, art. 12) — e devolve se não houver saldo para ele.`,
       campo: 'valor_numerico',
+      dados: {
+        porExtenso: formatarBRL(extenso.valor),
+        emNumeros: formatarBRL(numerico),
+        transcricao: cheque.valor_extenso_texto?.trim() ?? '',
+      },
     })
   }
 
@@ -333,7 +362,7 @@ function validarDatas(
     alertas.push({
       nivel: 'vermelho',
       codigo: 'data_emissao_ilegivel',
-      titulo: 'Data de emissão ilegível',
+      titulo: 'Não conseguimos ler a data do cheque',
       detalhe:
         'Cheque sem data legível é devolvido. Confira na foto e, se estiver rasurada, o cheque não serve.',
       campo: 'data_emissao',
@@ -342,9 +371,10 @@ function validarDatas(
     alertas.push({
       nivel: 'vermelho',
       codigo: 'data_rasurada',
-      titulo: 'Data rasurada',
-      detalhe: `Data lida ${formatarDataBr(cheque.data_emissao)}, mas há rasura na data. Rasura em data faz o banco devolver.`,
+      titulo: 'A data está rasurada',
+      detalhe: `Lemos ${formatarDataBr(cheque.data_emissao)}, mas há rasura em cima da data. Rasura na data é motivo de devolução, mesmo que dê para ler o que está escrito.`,
       campo: 'data_emissao',
+      dados: { dataLida: formatarDataBr(cheque.data_emissao) },
     })
   }
 
@@ -352,11 +382,15 @@ function validarDatas(
     alertas.push({
       nivel: 'vermelho',
       codigo: 'bom_para_anterior_emissao',
-      titulo: 'Bom para anterior à data do cheque',
-      detalhe: `"Bom p/" ${formatarDataBr(cheque.bom_para_anotado)} é anterior à data escrita no cheque (${formatarDataBr(
+      titulo: 'O "bom p/" é antes da data escrita no cheque',
+      detalhe: `Está anotado "bom p/ ${formatarDataBr(cheque.bom_para_anotado)}", mas no campo da data o cheque foi preenchido com ${formatarDataBr(
         cheque.data_emissao,
-      )}). Vale a data escrita no cheque — o combinado com o cliente não bate com o que o banco vai compensar.`,
+      )} — uma data depois. Quem manda no banco é a data escrita no cheque. Confirme com o cliente qual das duas vale antes de operar.`,
       campo: 'bom_para',
+      dados: {
+        bomPara: formatarDataBr(cheque.bom_para_anotado),
+        dataDoCheque: formatarDataBr(cheque.data_emissao),
+      },
     })
   }
 
@@ -410,8 +444,8 @@ function validarChecklistVisual(cheque: ChequeExtraido, alertas: Alerta[]): void
     alertas.push({
       nivel: 'vermelho',
       codigo: 'sem_assinatura',
-      titulo: 'Sem assinatura',
-      detalhe: 'Nenhuma assinatura detectada. Cheque sem assinatura é devolvido na hora.',
+      titulo: 'Não achamos assinatura no cheque',
+      detalhe: 'Cheque sem assinatura o banco devolve na hora, sem análise. Confira na foto — se a assinatura estiver lá e nós não vimos, corrija aqui em "Corrigir".',
       campo: 'assinatura_presente',
     })
   }
@@ -429,16 +463,16 @@ function validarChecklistVisual(cheque: ChequeExtraido, alertas: Alerta[]): void
       alertas.push({
         nivel: 'vermelho',
         codigo: `rasura_${critico.chave}`,
-        titulo: `Rasura em campo crítico: ${critico.chave}`,
-        detalhe: `"${rasura}". Rasura em nominal, valor ou data faz o banco devolver o cheque.`,
+        titulo: `Rasura em campo que o banco não perdoa: ${critico.chave}`,
+        detalhe: `Encontramos: "${rasura}". Rasura no nominal, no valor ou na data é motivo de devolução — nesses três campos o banco não aceita emenda.`,
         campo: critico.chave,
       })
     } else {
       alertas.push({
         nivel: 'amarelo',
         codigo: 'rasura_outro_campo',
-        titulo: 'Rasura detectada',
-        detalhe: `"${rasura}". Confira na foto se compromete a compensação.`,
+        titulo: 'Tem uma rasura no cheque',
+        detalhe: `Encontramos: "${rasura}". Não é num dos campos que o banco recusa direto, mas confira na foto se atrapalha.`,
       })
     }
   }
@@ -447,8 +481,8 @@ function validarChecklistVisual(cheque: ChequeExtraido, alertas: Alerta[]): void
     alertas.push({
       nivel: 'amarelo',
       codigo: 'nominal_vazio',
-      titulo: 'Nominal em branco',
-      detalhe: 'Cheque ao portador. Confirme se a operação aceita cheque sem nominal.',
+      titulo: 'O cheque está sem nominal (ao portador)',
+      detalhe: 'Ninguém foi escrito no "pague a". Confirme se a operação aceita cheque ao portador antes de lançar.',
       campo: 'nominal',
     })
   }
@@ -461,8 +495,9 @@ function validarChecklistVisual(cheque: ChequeExtraido, alertas: Alerta[]): void
     alertas.push({
       nivel: 'amarelo',
       codigo: 'confianca_baixa',
-      titulo: 'Leitura de baixa confiança',
-      detalhe: `Campos: ${baixaConfianca.join(', ')}. Confira estes campos na foto antes de lançar.`,
+      titulo: 'A leitura ficou em dúvida nestes campos',
+      detalhe: `A IA marcou como incerto: ${baixaConfianca.join(', ')}. Não quer dizer que está errado — quer dizer que ela não teve certeza. Confira na foto antes de lançar.`,
+      dados: { campos: baixaConfianca.join(', ') },
     })
   }
 }

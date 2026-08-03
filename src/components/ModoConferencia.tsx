@@ -7,6 +7,7 @@ import CaixaErro from './CaixaErro'
 import Cmc7 from './Cmc7'
 import EditarCheque from './EditarCheque'
 import FotoCheque from './FotoCheque'
+import ListaAlertas from './ListaAlertas'
 import PainelDeslizante from './PainelDeslizante'
 import StatusBadge from './StatusBadge'
 import { linhaTabulada, valorParaDigitar } from './LinhaCheque'
@@ -291,8 +292,6 @@ export default function ModoConferencia({
     )
   }
 
-  const vermelhos = (atual.alertas ?? []).filter((a) => a.nivel === 'vermelho')
-  const amarelos = (atual.alertas ?? []).filter((a) => a.nivel === 'amarelo')
   const cmc7 = atual.cmc7_completo ?? ''
   const valor = valorParaDigitar(atual)
   const dataTexto = formatarDataBr(atual.data_efetiva ?? atual.data_emissao)
@@ -486,28 +485,7 @@ export default function ModoConferencia({
             </p>
           )}
 
-          {vermelhos.length > 0 && (
-            <ul className="space-y-1 rounded-lg border border-devolve-border bg-devolve-bg px-3 py-2">
-              {vermelhos.map((alerta, i) => (
-                <li key={`${alerta.codigo}-${i}`} className="text-xs leading-relaxed text-devolve-text">
-                  <span aria-hidden>🔴</span> <strong>{alerta.titulo}.</strong> {alerta.detalhe}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {amarelos.length > 0 && (
-            <ul className="space-y-1 rounded-lg border border-conferir-border bg-conferir-bg px-3 py-2">
-              {amarelos.map((alerta, i) => (
-                <li
-                  key={`${alerta.codigo}-${i}`}
-                  className="text-xs leading-relaxed text-conferir-text"
-                >
-                  <span aria-hidden>🟡</span> <strong>{alerta.titulo}.</strong> {alerta.detalhe}
-                </li>
-              ))}
-            </ul>
-          )}
+          <ListaAlertas alertas={atual.alertas ?? []} variante="cartao" />
 
           {atual.alertas.length === 0 && (
             <p className="rounded-lg border border-ok-border bg-ok-bg px-3 py-2 text-xs text-ok-text">

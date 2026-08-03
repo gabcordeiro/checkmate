@@ -219,9 +219,16 @@ describe('CMC7', () => {
         bloco_corrigido: BLOCO1_OK,
       },
     ])
+    // A frase pode ser reescrita; o que não pode mudar é o fato que ela carrega.
     const alerta = r.alertas.find((a) => a.codigo === 'cmc7_bloco1_dv_resolvido')
-    expect(alerta?.detalhe).toContain('provavelmente 3')
-    expect(alerta?.detalhe).toContain('com 8 o verificador não bate')
+    expect(alerta?.detalhe).toContain('7º número')
+    expect(alerta?.detalhe).toContain('é 3')
+    expect(alerta?.dados).toMatchObject({
+      bloco: 1,
+      posicao: 7,
+      corrigido: BLOCO1_OK,
+      original: '74801680',
+    })
   })
 
   it('DV que não fecha e nenhuma alternativa resolve manda refotografar', () => {
@@ -237,7 +244,10 @@ describe('CMC7', () => {
       HOJE,
     )
     const alerta = r.alertas.find((a) => a.codigo === 'cmc7_bloco1_dv_invalido')
-    expect(alerta?.detalhe).toContain('refotografe')
+    // Os dois números que a operadora precisa comparar ficam em `dados`, para a
+    // tela de explicação montar o lado a lado sem extrair de uma frase.
+    expect(alerta?.dados).toMatchObject({ bloco: 1, naFoto: '0', pelaConta: '9' })
+    expect(alerta?.detalhe).toContain('tire outra foto')
     expect(r.cmc7_sugestoes).toEqual([])
   })
 

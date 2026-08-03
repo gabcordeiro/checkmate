@@ -56,6 +56,14 @@ export interface Alerta {
   detalhe: string
   /** Campo do cheque que o alerta aponta (para destacar na linha). */
   campo?: string
+  /**
+   * Os números por trás do alerta, separados do texto.
+   *
+   * A tela de explicação monta o exemplo visual com eles ("na foto está 9, a
+   * conta dá 8"), em vez de a operadora ter de extrair isso de uma frase. Foi
+   * ler "Lido 9, calculado 8" e não entender que motivou esta separação.
+   */
+  dados?: Record<string, string | number>
 }
 
 export type StatusCheque = 'ok' | 'conferir' | 'vermelho'

@@ -162,6 +162,30 @@ Detalhe que custou um bug: `.t-check` tem de ficar no **mesmo elemento** que car
 `aria-checked` — é o atributo que a regra usa para soltar o traço. Com a classe num filho, o
 seletor nunca casa e o check nunca aparece.
 
+### Linguagem dos alertas
+
+Teste com a operadora: diante de *"Bloco 1: dígito verificador não fecha. Lido 9, calculado 8"*
+ela disse **"não entendi"** e teve de adivinhar (*"acho que ele quis dizer que leu 9 na foto mas
+calculado foi 8"*). Alerta que precisa ser adivinhado não protege ninguém.
+
+Três mudanças saíram disso:
+
+1. **Sem jargão.** "Bloco 2" virou "2º grupo (número do cheque)" — diz onde olhar na tarja.
+   "Dígito verificador não fecha" virou "algum número do 2º grupo do CMC7 foi lido errado",
+   com a explicação de que o último número do grupo é de conferência.
+2. **Os números saem do texto.** Cada alerta carrega `dados` (`{ naFoto: '9', pelaConta: '8' }`)
+   separado da frase, e a tela monta o lado a lado — em vez de a operadora extrair isso de uma
+   frase corrida.
+3. **Botão "? entender"** em cada alerta, abrindo um modal com quatro blocos: *o que aconteceu*,
+   *neste cheque* (a comparação com os valores reais), *por que isso importa* (em dinheiro) e
+   *o que fazer* (passos numerados). Alertas importantes trazem ainda um "para ficar claro" com
+   um caso concreto.
+
+A separação é de propósito: o validador (`src/lib/validation/`) produz o FATO — código, nível e
+números; o catálogo (`src/lib/explicacoes.ts`) ENSINA. Assim a regra continua testável sem
+carregar texto didático, e um teste garante que todo alerta que o validador sabe emitir tem
+explicação escrita — se alguém criar um alerta novo sem explicar, a suíte quebra.
+
 ### Paleta e identidade
 
 A regra que manda em tudo: **verde/amarelo/vermelho são reservados** para o semáforo de

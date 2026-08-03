@@ -75,6 +75,8 @@ export interface AlertaAgrupado {
   valorAfetado: number
   chequeIds: string[]
   exemplo: string
+  /** Números do primeiro alerta do grupo, para a tela de explicação. */
+  dados?: Record<string, string | number>
 }
 
 export interface AnaliseLote {
@@ -162,6 +164,7 @@ export function analisarLote(cheques: ChequeRow[]): AnaliseLote {
           valorAfetado: 0,
           chequeIds: [],
           exemplo: alerta.detalhe,
+          dados: alerta.dados,
         }
         porTipo.set(alerta.codigo, grupo)
       }
