@@ -8,7 +8,30 @@
 
 export type Confianca = 'alta' | 'media' | 'baixa'
 
-/** Um dígito que o modelo não conseguiu ler com certeza. */
+/**
+ * Campos tipados (valor, datas) que o modelo NÃO CONSEGUIU LER.
+ *
+ * Não confundir com o campo vir `null`: `bom_para_anotado: null` pode ser "o
+ * cheque não tem essa anotação" ou "não consegui ler". Só o segundo vira `?`
+ * vermelho na tela. Em campos de texto a marca vai inline, no próprio valor
+ * ("0210?7369"), porque ali a lacuna é de um caractere e não do campo inteiro.
+ */
+export type CampoNaoLido =
+  | 'valor_numerico'
+  | 'data_emissao'
+  | 'bom_para_anotado'
+  | 'nominal'
+  | 'emitente'
+  | 'banco_codigo'
+  | 'agencia'
+  | 'conta'
+  | 'numero_cheque'
+  | 'valor_extenso_texto'
+
+/**
+ * Um dígito que o modelo LEU mas não tem certeza de qual é — "pode ser 3 ou 8".
+ * Diferente do `?`, que é "não consegui ler".
+ */
 export interface DigitoDuvidoso {
   /** 1, 2 ou 3 — qual bloco do CMC7. */
   bloco: 1 | 2 | 3
@@ -43,6 +66,8 @@ export interface ChequeExtraido {
   assinatura_presente: boolean
   rasuras_detectadas: string[]
   confianca_por_campo: Record<string, Confianca>
+  /** Campos tipados que o modelo não conseguiu ler (viram `?` na tela). */
+  nao_lidos: CampoNaoLido[]
   observacoes: string | null
 }
 

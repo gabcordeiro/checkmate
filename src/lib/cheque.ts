@@ -10,7 +10,7 @@
 import { normalizarEmitente } from './format'
 import { cmc7Cru, montarCmc7Completo } from './validation/cmc7'
 import { ordenarAlertas, statusDosAlertas, validarCheque } from './validation'
-import type { Alerta, ChequeExtraido, Confianca } from './validation/types'
+import type { Alerta, CampoNaoLido, ChequeExtraido, Confianca } from './validation/types'
 import type { ChequeRow } from './supabase/types'
 
 /** Campos que a operadora pode corrigir na tela. */
@@ -74,13 +74,37 @@ export function linhaParaExtraido(linha: ChequeRow): ChequeExtraido {
     assinatura_presente: linha.assinatura_presente === true,
     rasuras_detectadas: linha.rasuras ?? [],
     confianca_por_campo: (linha.confianca ?? {}) as Record<string, Confianca>,
+    nao_lidos: linha.nao_lidos ?? [],
     observacoes: linha.observacoes,
   }
 }
 
 /** Aplica a correção da operadora sobre o extraído. */
+/** Campo editado na tela → nome dele em `nao_lidos`. */
+const EDICAO_PARA_NAO_LIDO: Partial<Record<CampoEditavel, CampoNaoLido>> = {
+  emitente: 'emitente',
+  nominal: 'nominal',
+  numero_cheque: 'numero_cheque',
+  banco_codigo: 'banco_codigo',
+  agencia: 'agencia',
+  conta: 'conta',
+  valor_numerico: 'valor_numerico',
+  valor_extenso_texto: 'valor_extenso_texto',
+  data_emissao: 'data_emissao',
+  bom_para: 'bom_para_anotado',
+}
+
 export function aplicarEdicao(base: ChequeExtraido, edicao: EdicaoCheque): ChequeExtraido {
   const cmc7 = { ...base.cmc7 }
+
+  // Campo que ela acabou de digitar deixa de ser "não lido" — foi lido por ela,
+  // que é quem manda. Sem isso o `?` continuaria na tela depois da correção.
+  const naoLidos = base.nao_lidos.filter((campo) => {
+    const editado = (Object.keys(edicao) as CampoEditavel[]).some(
+      (chave) => EDICAO_PARA_NAO_LIDO[chave] === campo,
+    )
+    return !editado
+  })
 
   for (const bloco of [1, 2, 3] as const) {
     const chave = `cmc7_bloco${bloco}` as const
@@ -93,6 +117,7 @@ export function aplicarEdicao(base: ChequeExtraido, edicao: EdicaoCheque): Chequ
   return {
     ...base,
     cmc7,
+    nao_lidos: naoLidos,
     emitente: 'emitente' in edicao ? (edicao.emitente ?? null) : base.emitente,
     nominal: 'nominal' in edicao ? (edicao.nominal ?? null) : base.nominal,
     numero_cheque:
@@ -156,6 +181,7 @@ export function colunasDoCheque(cheque: ChequeExtraido, alertasExtras: Alerta[] 
     assinatura_presente: cheque.assinatura_presente,
     rasuras: cheque.rasuras_detectadas,
     confianca: cheque.confianca_por_campo,
+    nao_lidos: cheque.nao_lidos,
     observacoes: cheque.observacoes,
     status: statusDosAlertas(alertas),
     alertas,

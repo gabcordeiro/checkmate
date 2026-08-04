@@ -36,6 +36,7 @@ function linha(over: Partial<ChequeRow> = {}): ChequeRow {
     assinatura_presente: true,
     rasuras: [],
     confianca: {},
+    nao_lidos: [],
     observacoes: null,
     status: 'ok',
     alertas: [],

@@ -10,7 +10,12 @@
  * process.env.GEMINI_API_KEY / GROQ_API_KEY.
  */
 
-import type { ChequeExtraido, Confianca, DigitoDuvidoso } from '../validation/types'
+import type {
+  CampoNaoLido,
+  ChequeExtraido,
+  Confianca,
+  DigitoDuvidoso,
+} from '../validation/types'
 import { candidatos, escolherMelhor, fixarModelo, listarModelos } from './gemini-modelos'
 import { PROMPT_EXTRACAO } from './prompt'
 import { paraGemini, SCHEMA_EXTRACAO } from './schema'
@@ -62,6 +67,43 @@ function digitos(valor: unknown): string | null {
   if (!t) return null
   const somente = t.replace(/\D/g, '')
   return somente || null
+}
+
+/**
+ * Dígitos preservando o `?` — usado nos blocos do CMC7.
+ *
+ * Se limpássemos o `?` aqui, o bloco encurtaria em silêncio e a conferência
+ * interna passaria a ser calculada sobre dados que não são os do cheque: é
+ * exatamente o falso positivo que fazia o app acusar erro num bloco correto.
+ */
+function digitosComLacunas(valor: unknown): string | null {
+  const t = texto(valor)
+  if (!t) return null
+  const somente = t.replace(/[^0-9?]/g, '')
+  return somente || null
+}
+
+const CAMPOS_NAO_LIDOS_VALIDOS = new Set<CampoNaoLido>([
+  'valor_numerico',
+  'data_emissao',
+  'bom_para_anotado',
+  'nominal',
+  'emitente',
+  'banco_codigo',
+  'agencia',
+  'conta',
+  'numero_cheque',
+  'valor_extenso_texto',
+])
+
+function normalizarNaoLidos(valor: unknown): CampoNaoLido[] {
+  if (!Array.isArray(valor)) return []
+  const saida = new Set<CampoNaoLido>()
+  for (const item of valor) {
+    const nome = texto(item) as CampoNaoLido | null
+    if (nome && CAMPOS_NAO_LIDOS_VALIDOS.has(nome)) saida.add(nome)
+  }
+  return [...saida]
 }
 
 function numero(valor: unknown): number | null {
@@ -158,9 +200,9 @@ export function normalizarChequeExtraido(bruto: unknown): ChequeExtraido {
     conta: digitos(c.conta),
     numero_cheque: digitos(c.numero_cheque),
     cmc7: {
-      bloco1: digitos(cmc7.bloco1),
-      bloco2: digitos(cmc7.bloco2),
-      bloco3: digitos(cmc7.bloco3),
+      bloco1: digitosComLacunas(cmc7.bloco1),
+      bloco2: digitosComLacunas(cmc7.bloco2),
+      bloco3: digitosComLacunas(cmc7.bloco3),
       digitos_duvidosos: normalizarDuvidosos(cmc7.digitos_duvidosos),
     },
     valor_numerico: numero(c.valor_numerico),
@@ -174,6 +216,7 @@ export function normalizarChequeExtraido(bruto: unknown): ChequeExtraido {
     assinatura_presente: c.assinatura_presente === true,
     rasuras_detectadas: listaDeTextos(c.rasuras_detectadas),
     confianca_por_campo: normalizarConfianca(c.confianca_por_campo),
+    nao_lidos: normalizarNaoLidos(c.nao_lidos),
     observacoes: texto(c.observacoes),
   }
 }

@@ -19,6 +19,7 @@ import {
   combinacoesQueFecham,
   NOME_BLOCO,
   somenteDigitos,
+  temIlegivel,
   type NumeroBloco,
 } from './cmc7'
 import {
@@ -91,12 +92,18 @@ function validarCmc7(
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_ausente`,
         titulo: `Não deu para ler o ${NOME_BLOCO[numero]} do CMC7`,
-        detalhe: `O CMC7 é a fileira de números no rodapé do cheque. Essa parte não saiu legível na foto. Tire outra foto de perto, com o rodapé nítido e sem reflexo.`,
+        detalhe:
+          'O CMC7 é a fileira de números no rodapé do cheque. Essa parte não saiu na foto. Tire outra foto de perto, com o rodapé nítido e sem reflexo.',
         campo: `cmc7_bloco${numero}`,
         dados: { bloco: numero },
       })
       continue
     }
+
+    // Caracteres que a IA não leu já aparecem como `?` vermelho na tela, onde a
+    // operadora clica e digita. Repetir isso como alerta seria dizer duas vezes
+    // a mesma coisa — e foi ler o alerta que confundiu, não ver o `?`.
+    if (checagem.ilegivel) continue
 
     if (!checagem.tamanhoOk) {
       alertas.push({
@@ -111,15 +118,21 @@ function validarCmc7(
           esperados: checagem.tamanhoEsperado,
         },
       })
+      // Sem o tamanho certo, a conferência interna rodaria sobre dados que não
+      // são os do cheque e acusaria erro sempre. Um problema, um alerta.
+      continue
     }
 
     if (checagem.dvOk) continue
 
-    // DV não fechou. Antes de mandar refotografar, testamos as alternativas
-    // que o próprio modelo marcou como duvidosas.
+    // A conferência interna não fechou. Antes de avisar, testamos as leituras
+    // alternativas que o próprio modelo marcou como ambíguas (3 ou 8?).
     const combinacoes = combinacoesQueFecham(numero, valor, duvidosos)
 
     if (combinacoes.length === 1) {
+      // Resolvido sozinho: o dígito certo aparece destacado no CMC7 da tela e o
+      // contador diz "1 número corrigido". Não vira alerta — não há nada para a
+      // operadora fazer.
       const combinacao = combinacoes[0]
       for (const escolha of combinacao.escolhas) {
         const original = duvidosos.find(
@@ -137,32 +150,6 @@ function validarCmc7(
           bloco_corrigido: combinacao.blocoCorrigido,
         })
       }
-
-      const resumo = combinacao.escolhas
-        .map((e) => {
-          const original = duvidosos.find((d) => d.bloco === numero && d.posicao === e.posicao)
-          const outros = (original?.alternativas ?? [])
-            .map((a) => somenteDigitos(a))
-            .filter((a) => a.length === 1 && a !== e.digito)
-          return outros.length
-            ? `o ${e.posicao}º número parecia ${outros.join(' ou ')} na foto, mas é ${e.digito} — só com ${e.digito} a conta de conferência fecha`
-            : `o ${e.posicao}º número é ${e.digito}`
-        })
-        .join('; ')
-
-      alertas.push({
-        nivel: 'amarelo',
-        codigo: `cmc7_bloco${numero}_dv_resolvido`,
-        titulo: 'Corrigimos um número do CMC7 para você',
-        detalhe: `No ${NOME_BLOCO[numero]}, ${resumo}. O CMC7 na tela já está corrigido — pode copiar.`,
-        campo: `cmc7_bloco${numero}`,
-        dados: {
-          bloco: numero,
-          posicao: combinacao.escolhas[0]?.posicao ?? 0,
-          corrigido: combinacao.blocoCorrigido,
-          original: checagem.digitos,
-        },
-      })
       continue
     }
 
@@ -170,28 +157,26 @@ function validarCmc7(
       alertas.push({
         nivel: 'amarelo',
         codigo: `cmc7_bloco${numero}_dv_ambiguo`,
-        titulo: `Duas leituras possíveis no ${NOME_BLOCO[numero]} do CMC7`,
-        detalhe: `Candidatos: ${combinacoes
-          .slice(0, 6)
-          .map((c) => c.blocoCorrigido)
-          .join(', ')}. Confira o dígito na foto antes de lançar.`,
+        titulo: 'Confira o CMC7 na foto',
+        detalhe: `Há mais de uma leitura possível para um dos números. Amplie a foto e confira o dígito destacado antes de lançar.`,
         campo: `cmc7_bloco${numero}`,
+        dados: { bloco: numero },
       })
       continue
     }
 
+    // Tamanho certo, nenhum `?`, nenhuma dúvida declarada — e mesmo assim a
+    // conferência interna do número não bate. Ou seja: a IA leu algum dígito
+    // errado sem perceber. É o caso mais perigoso (parece certo e não é), então
+    // avisa — mas sem falar em bloco, dígito verificador ou somatória.
     alertas.push({
       nivel: 'amarelo',
       codigo: `cmc7_bloco${numero}_dv_invalido`,
-      titulo: `Algum número do ${NOME_BLOCO[numero]} do CMC7 foi lido errado`,
-      detalhe: `O último número desse grupo é de conferência: ele tem que bater com uma conta feita a partir dos outros. Na foto ele está ${checagem.dvLido}, mas a conta dá ${checagem.dvEsperado} — ou seja, algum número do grupo saiu errado na leitura. Confira no rodapé do cheque; se não der para ler, tire outra foto.`,
+      titulo: 'Confira o CMC7 na foto',
+      detalhe:
+        'A conferência do próprio número não bateu, o que costuma significar um dígito lido errado. Amplie a foto e compare com o rodapé do cheque.',
       campo: `cmc7_bloco${numero}`,
-      dados: {
-        bloco: numero,
-        naFoto: checagem.dvLido ?? '—',
-        pelaConta: checagem.dvEsperado ?? '—',
-        grupoLido: checagem.digitos,
-      },
+      dados: { bloco: numero, grupoLido: checagem.digitos },
     })
   }
 }
@@ -200,12 +185,42 @@ function validarCmc7(
 // 2. Cruzamento entre CMC7 e os campos impressos no cabeçalho
 // ---------------------------------------------------------------------------
 
-function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): void {
-  const bloco1 = somenteDigitos(cheque.cmc7?.bloco1)
-  const bloco2 = somenteDigitos(cheque.cmc7?.bloco2)
-  const bloco3 = somenteDigitos(cheque.cmc7?.bloco3)
+/** Aplica ao bloco as correções que a conferência interna já confirmou. */
+function blocoCorrigido(
+  valor: string | null | undefined,
+  numero: NumeroBloco,
+  sugestoes: SugestaoCmc7[],
+): string {
+  // Bloco com `?` não entra em cruzamento: `somenteDigitos` descartaria a
+  // lacuna e a comparação passaria a ser feita contra um número mais curto do
+  // que o do cheque — acusando divergência que não existe.
+  if (temIlegivel(valor)) return ''
+  let saida = somenteDigitos(valor)
+  for (const s of sugestoes.filter((s) => s.bloco === numero)) {
+    if (s.posicao >= 1 && s.posicao <= saida.length) {
+      saida = saida.slice(0, s.posicao - 1) + s.digito + saida.slice(s.posicao)
+    }
+  }
+  return saida
+}
 
-  const bancoImpresso = somenteDigitos(cheque.banco_codigo)
+/**
+ * O cruzamento roda sobre o CMC7 JÁ CORRIGIDO.
+ *
+ * Comparar com a leitura crua acusaria "a agência do CMC7 é diferente da
+ * impressa" logo depois de a própria conferência interna ter consertado aquele
+ * dígito — dois alertas contraditórios sobre o mesmo número.
+ */
+function validarCruzamentoInterno(
+  cheque: ChequeExtraido,
+  alertas: Alerta[],
+  sugestoes: SugestaoCmc7[],
+): void {
+  const bloco1 = blocoCorrigido(cheque.cmc7?.bloco1, 1, sugestoes)
+  const bloco2 = blocoCorrigido(cheque.cmc7?.bloco2, 2, sugestoes)
+  const bloco3 = blocoCorrigido(cheque.cmc7?.bloco3, 3, sugestoes)
+
+  const bancoImpresso = (temIlegivel(cheque.banco_codigo) ? '' : somenteDigitos(cheque.banco_codigo))
   if (bancoImpresso && bloco1) {
     const bancoCmc7 = bancoDoBloco1(bloco1)
     if (bancoCmc7 && bancoImpresso.padStart(3, '0') !== bancoCmc7) {
@@ -220,7 +235,7 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
     }
   }
 
-  const agenciaImpressa = somenteDigitos(cheque.agencia)
+  const agenciaImpressa = (temIlegivel(cheque.agencia) ? '' : somenteDigitos(cheque.agencia))
   if (agenciaImpressa && bloco1) {
     const agenciaCmc7 = agenciaDoBloco1(bloco1)
     if (agenciaCmc7 && agenciaImpressa.padStart(4, '0') !== agenciaCmc7) {
@@ -235,7 +250,7 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
     }
   }
 
-  const numeroImpresso = somenteDigitos(cheque.numero_cheque)
+  const numeroImpresso = (temIlegivel(cheque.numero_cheque) ? '' : somenteDigitos(cheque.numero_cheque))
   if (numeroImpresso && bloco2 && !bloco2.includes(numeroImpresso)) {
     alertas.push({
       nivel: 'amarelo',
@@ -247,7 +262,7 @@ function validarCruzamentoInterno(cheque: ChequeExtraido, alertas: Alerta[]): vo
     })
   }
 
-  const contaImpressa = somenteDigitos(cheque.conta)
+  const contaImpressa = (temIlegivel(cheque.conta) ? '' : somenteDigitos(cheque.conta))
   if (contaImpressa.length >= 4 && bloco3 && !bloco3.includes(contaImpressa)) {
     alertas.push({
       nivel: 'amarelo',
@@ -274,24 +289,38 @@ function validarValores(
       ? cheque.valor_numerico
       : null
 
-  if (numerico === null) {
-    alertas.push({
-      nivel: 'amarelo',
-      codigo: 'valor_numerico_ausente',
-      titulo: 'Não conseguimos ler o valor em números',
-      detalhe: 'Sem ele não dá para comparar com o valor por extenso, que é a comparação que evita devolução. Confira na foto e corrija aqui.',
-      campo: 'valor_numerico',
-    })
-  }
+  // Campo que a IA não leu já aparece como `?` vermelho na tela e entra no
+  // aviso único de "campos não lidos". Aqui só tratamos o que é do conteúdo do
+  // cheque, não da qualidade da leitura.
+  const naoLeuNumerico = cheque.nao_lidos.includes('valor_numerico')
+  const naoLeuExtenso = cheque.nao_lidos.includes('valor_extenso_texto')
 
-  if (!cheque.valor_extenso_texto?.trim()) {
+  if (!cheque.valor_extenso_texto?.trim() && !naoLeuExtenso) {
     alertas.push({
       nivel: 'amarelo',
       codigo: 'valor_extenso_ausente',
-      titulo: 'Não conseguimos ler o valor por extenso',
+      titulo: 'O cheque está sem o valor por extenso',
       detalhe:
-        'Sem o extenso não dá para checar a divergência que faz o banco devolver. Confira no olho.',
+        'A linha do extenso aparece em branco. Cheque sem extenso o banco devolve — confira na foto.',
       campo: 'valor_extenso_texto',
+    })
+    return { valorExtensoConvertido: null }
+  }
+
+  if (!cheque.valor_extenso_texto?.trim()) return { valorExtensoConvertido: null }
+
+  // Leitura parcial: comparar aqui produziria um valor MENOR que o do cheque e
+  // um "o banco vai devolver" vermelho por erro de leitura nosso. Falso vermelho
+  // destrói a confiança no semáforo, que é o que o produto vende.
+  if (extenso.parcial) {
+    alertas.push({
+      nivel: 'amarelo',
+      codigo: 'valor_extenso_parcial',
+      titulo: 'Não lemos o valor por extenso inteiro',
+      detalhe:
+        'Falta um pedaço da frase, então não dá para comparar com o valor em números. Amplie a foto, complete o que está marcado e a comparação roda sozinha.',
+      campo: 'valor_extenso_texto',
+      dados: { transcricao: cheque.valor_extenso_texto.trim() },
     })
     return { valorExtensoConvertido: null }
   }
@@ -311,7 +340,7 @@ function validarValores(
   if (extenso.palavrasIgnoradas.length > 0) {
     alertas.push({
       nivel: 'amarelo',
-      codigo: 'valor_extenso_parcial',
+      codigo: 'valor_extenso_palavras',
       titulo: 'Há palavras que não entendemos no valor por extenso',
       detalhe: `Ignoradas: ${extenso.palavrasIgnoradas.join(', ')}. O valor interpretado (${formatarBRL(
         extenso.valor,
@@ -319,6 +348,9 @@ function validarValores(
       campo: 'valor_extenso_texto',
     })
   }
+
+  // Sem o valor em números não há o que comparar — e o `?` já avisa.
+  if (naoLeuNumerico) return { valorExtensoConvertido: extenso.valor }
 
   if (numerico !== null && Math.abs(extenso.valor - numerico) > TOLERANCIA_CENTAVOS) {
     alertas.push({
@@ -358,16 +390,24 @@ function validarDatas(
     return n.includes('data') || n.includes('emissao')
   })
 
-  if (!emissao) {
+  // A distinção que o `?` tornou possível: "não consegui ler" é problema NOSSO
+  // (amarelo, ela digita e resolve); "o cheque está sem data" é problema DO
+  // CHEQUE (vermelho, o banco devolve). Antes os dois davam vermelho, e a
+  // operadora levava um susto por uma falha de leitura.
+  if (!emissao && cheque.nao_lidos.includes('data_emissao')) {
+    // Coberto pelo aviso único de campos não lidos + o `?` na tela.
+  } else if (!emissao) {
     alertas.push({
       nivel: 'vermelho',
-      codigo: 'data_emissao_ilegivel',
-      titulo: 'Não conseguimos ler a data do cheque',
+      codigo: 'data_emissao_ausente',
+      titulo: 'O cheque está sem data',
       detalhe:
-        'Cheque sem data legível é devolvido. Confira na foto e, se estiver rasurada, o cheque não serve.',
+        'O campo da data aparece em branco. Cheque sem data o banco devolve — peça ao cliente para preencher.',
       campo: 'data_emissao',
     })
-  } else if (dataRasurada) {
+  }
+
+  if (emissao && dataRasurada) {
     alertas.push({
       nivel: 'vermelho',
       codigo: 'data_rasurada',
@@ -433,6 +473,55 @@ function validarDatas(
   }
 
   return { dataEfetiva }
+}
+
+// ---------------------------------------------------------------------------
+// 4b. Campos que a IA não conseguiu ler
+// ---------------------------------------------------------------------------
+
+const NOME_AMIGAVEL: Record<string, string> = {
+  valor_numerico: 'valor em números',
+  valor_extenso_texto: 'valor por extenso',
+  data_emissao: 'data do cheque',
+  bom_para_anotado: 'bom p/',
+  nominal: 'nominal',
+  emitente: 'emitente',
+  banco_codigo: 'banco',
+  agencia: 'agência',
+  conta: 'conta',
+  numero_cheque: 'nº do cheque',
+}
+
+/**
+ * UM alerta para tudo que não foi lido, em vez de um por campo.
+ *
+ * O detalhe de cada lacuna já está na tela, no `?` vermelho em cima do campo,
+ * onde ela clica e digita. Este alerta existe só para o cheque aparecer no
+ * painel do lote — senão ela teria de varrer linha por linha para achar o que
+ * falta preencher.
+ */
+function validarCamposNaoLidos(cheque: ChequeExtraido, alertas: Alerta[]): void {
+  const campos = (cheque.nao_lidos ?? []).map((c) => NOME_AMIGAVEL[c] ?? c)
+
+  // Lacuna dentro de um texto conta junto: é a mesma pergunta para a operadora.
+  const blocosComLacuna = ([1, 2, 3] as const).filter((n) =>
+    temIlegivel(cheque.cmc7?.[`bloco${n}`]),
+  )
+  if (blocosComLacuna.length > 0) campos.push('CMC7')
+
+  if (campos.length === 0) return
+
+  const lista = [...new Set(campos)]
+  alertas.push({
+    nivel: 'amarelo',
+    codigo: 'campos_nao_lidos',
+    titulo:
+      lista.length === 1
+        ? `Não conseguimos ler: ${lista[0]}`
+        : `Não conseguimos ler ${lista.length} campos`,
+    detalhe: `Está marcado com ? na tela: ${lista.join(', ')}. Amplie a foto, digite o que você vê e o ? some.`,
+    dados: { campos: lista.join(', ') },
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -522,9 +611,10 @@ export function validarCheque(
   const sugestoes: SugestaoCmc7[] = []
 
   validarCmc7(cheque, alertas, sugestoes)
-  validarCruzamentoInterno(cheque, alertas)
+  validarCruzamentoInterno(cheque, alertas, sugestoes)
   const { valorExtensoConvertido } = validarValores(cheque, alertas)
   const { dataEfetiva } = validarDatas(cheque, alertas, referencia)
+  validarCamposNaoLidos(cheque, alertas)
   validarChecklistVisual(cheque, alertas)
 
   const ordenados = ordenarAlertas(alertas)

@@ -38,8 +38,26 @@ export function ordinal(posicao: number): string {
   return `${posicao}º`
 }
 
+/** Marca de "não consegui ler este caractere". */
+export const ILEGIVEL = '?'
+
 export function somenteDigitos(valor: string | null | undefined): string {
   return (valor ?? '').replace(/\D/g, '')
+}
+
+/**
+ * Dígitos E as marcas de ilegível, na ordem — é o valor que a tela mostra.
+ *
+ * Diferente de `somenteDigitos`, que descarta o `?`: descartar encurtaria o
+ * bloco silenciosamente e faria o verificador ser calculado sobre dados
+ * errados, acusando erro onde não há.
+ */
+export function digitosELacunas(valor: string | null | undefined): string {
+  return (valor ?? '').replace(/[^0-9?]/g, '')
+}
+
+export function temIlegivel(valor: string | null | undefined): boolean {
+  return digitosELacunas(valor).includes(ILEGIVEL)
 }
 
 /** DV módulo 10 (Luhn) dos dígitos de dados de um bloco. */
@@ -61,32 +79,57 @@ export function calcularDv(dados: string): number {
 export interface ChecagemBloco {
   bloco: NumeroBloco
   presente: boolean
+  /** Dígitos e `?`, como será mostrado na tela. */
   digitos: string
+  /** Algum caractere não foi lido. */
+  ilegivel: boolean
   tamanhoEsperado: number
   tamanhoOk: boolean
-  /** DV lido do próprio bloco (último dígito). */
+  /**
+   * Se dá para afirmar alguma coisa sobre a conferência interna do bloco.
+   * Falso quando falta caractere, sobra caractere ou há `?` — nesses casos o
+   * cálculo rodaria sobre dados que não são os do cheque.
+   */
+  avaliavel: boolean
+  /** Último dígito lido do bloco. Null quando não avaliável. */
   dvLido: string | null
-  /** DV que o cálculo diz que deveria estar ali. */
+  /** O que o cálculo diz que deveria estar ali. Null quando não avaliável. */
   dvEsperado: string | null
+  /** Só `false` quando avaliável e realmente não fecha. */
   dvOk: boolean
 }
 
-/** Confere o DV de um bloco isolado, sem tocar em dígitos duvidosos. */
+/**
+ * Confere o bloco isolado.
+ *
+ * Regra que consertou um falso positivo real: a conferência interna só é
+ * calculada quando o bloco está íntegro (tamanho certo e sem `?`). Antes ela
+ * rodava sempre — então um bloco lido com 9 dígitos em vez de 8 gerava DOIS
+ * alertas para a mesma causa, e o segundo dizia que um número estava errado
+ * quando o problema era outro. Sem base para afirmar, não se afirma.
+ */
 export function checarBloco(bloco: NumeroBloco, valor: string | null | undefined): ChecagemBloco {
-  const digitos = somenteDigitos(valor)
+  const digitos = digitosELacunas(valor)
   const tamanhoEsperado = TAMANHO_BLOCO[bloco]
-  if (digitos.length < 2) {
+  const ilegivel = digitos.includes(ILEGIVEL)
+  const tamanhoOk = digitos.length === tamanhoEsperado
+  const avaliavel = digitos.length >= 2 && tamanhoOk && !ilegivel
+
+  if (!avaliavel) {
     return {
       bloco,
       presente: digitos.length > 0,
       digitos,
+      ilegivel,
       tamanhoEsperado,
-      tamanhoOk: false,
+      tamanhoOk,
+      avaliavel: false,
       dvLido: null,
       dvEsperado: null,
-      dvOk: false,
+      dvOk: true,
     }
   }
+
   const dados = digitos.slice(0, -1)
   const dvLido = digitos.slice(-1)
   const dvEsperado = String(calcularDv(dados))
@@ -94,8 +137,10 @@ export function checarBloco(bloco: NumeroBloco, valor: string | null | undefined
     bloco,
     presente: true,
     digitos,
+    ilegivel: false,
     tamanhoEsperado,
-    tamanhoOk: digitos.length === tamanhoEsperado,
+    tamanhoOk: true,
+    avaliavel: true,
     dvLido,
     dvEsperado,
     dvOk: dvLido === dvEsperado,
@@ -113,13 +158,19 @@ const MAX_COMBINACOES = 4096
 
 /**
  * Testa todas as combinações das alternativas dos dígitos duvidosos e devolve
- * SOMENTE as que fecham o DV. Zero resultados = refotografar.
+ * SOMENTE as que fecham a conferência interna.
+ *
+ * "Duvidoso" aqui é o caractere que o modelo LEU mas pode ser 3 ou 8 — não o
+ * que ele não conseguiu ler (esse vira `?` e não tem alternativa a testar).
+ * Bloco com `?` ou com tamanho fora do padrão não é avaliado: o cálculo rodaria
+ * sobre dados que não são os do cheque.
  */
 export function combinacoesQueFecham(
   bloco: NumeroBloco,
   valor: string | null | undefined,
   duvidosos: DigitoDuvidoso[],
 ): CombinacaoValida[] {
+  if (!checarBloco(bloco, valor).avaliavel) return []
   const digitos = somenteDigitos(valor)
   if (digitos.length < 2) return []
 
@@ -166,13 +217,20 @@ export function combinacoesQueFecham(
   return validas
 }
 
-/** String única do CMC7, com os blocos separados por espaço. Vazio se faltar bloco. */
+/**
+ * String única do CMC7, com os blocos separados por espaço. Vazio se faltar bloco.
+ *
+ * Preserva o `?`: é o valor que fica guardado no banco e que a tela consulta
+ * para saber se ainda há lacuna. Se aqui a lacuna sumisse, o número gravado
+ * pareceria completo — e a operadora copiaria para o sistema da empresa um
+ * CMC7 mais curto que o do cheque, sem nada avisando.
+ */
 export function montarCmc7Completo(
   bloco1: string | null | undefined,
   bloco2: string | null | undefined,
   bloco3: string | null | undefined,
 ): string | null {
-  const blocos = [bloco1, bloco2, bloco3].map(somenteDigitos)
+  const blocos = [bloco1, bloco2, bloco3].map(digitosELacunas)
   if (blocos.some((b) => b.length === 0)) return null
   return blocos.join(' ')
 }
@@ -187,14 +245,30 @@ export function cmc7Cru(
   return completo ? completo.replace(/\s/g, '') : null
 }
 
+/**
+ * Recorte posicional do bloco 1, com `?` contando como caractere.
+ *
+ * Descartar a lacuna deslocaria os dígitos seguintes e o recorte devolveria
+ * outro número — que então seria comparado com o impresso e acusaria uma
+ * divergência inventada. Com lacuna dentro do recorte, não há o que comparar.
+ */
+function recorteBloco1(
+  bloco1: string | null | undefined,
+  inicio: number,
+  fim: number,
+): string | null {
+  const d = digitosELacunas(bloco1)
+  if (d.length < fim) return null
+  const trecho = d.slice(inicio, fim)
+  return trecho.includes(ILEGIVEL) ? null : trecho
+}
+
 /** Banco impresso no cabeçalho vs. os 3 primeiros dígitos do bloco 1. */
 export function bancoDoBloco1(bloco1: string | null | undefined): string | null {
-  const d = somenteDigitos(bloco1)
-  return d.length >= 3 ? d.slice(0, 3) : null
+  return recorteBloco1(bloco1, 0, 3)
 }
 
 /** Agência impressa no cabeçalho vs. os dígitos 4-7 do bloco 1. */
 export function agenciaDoBloco1(bloco1: string | null | undefined): string | null {
-  const d = somenteDigitos(bloco1)
-  return d.length >= 7 ? d.slice(3, 7) : null
+  return recorteBloco1(bloco1, 3, 7)
 }

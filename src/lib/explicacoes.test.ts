@@ -26,6 +26,7 @@ function cheque(over: Partial<ChequeExtraido> = {}): ChequeExtraido {
     assinatura_presente: true,
     rasuras_detectadas: [],
     confianca_por_campo: {},
+    nao_lidos: [],
     observacoes: null,
     ...over,
   }
@@ -68,6 +69,11 @@ const CASOS: ChequeExtraido[] = [
       digitos_duvidosos: [{ bloco: 1, posicao: 7, alternativas: ['8', '3'] }],
     },
   }),
+  // Os casos que o `?` introduziu.
+  cheque({ cmc7: { bloco1: '748016?0', bloco2: BLOCO2_OK, bloco3: BLOCO3_OK, digitos_duvidosos: [] } }),
+  cheque({ valor_extenso_texto: 'quatrocentos e ? reais' }),
+  cheque({ valor_numerico: null, nao_lidos: ['valor_numerico'] }),
+  cheque({ data_emissao: null, nao_lidos: ['data_emissao'] }),
 ]
 
 describe('cobertura das explicações', () => {
@@ -122,7 +128,13 @@ describe('a explicação usa os números do cheque, não texto genérico', () =>
     expect(explicacao.comparacao?.find((l) => l.rotulo.includes('números'))?.tom).toBe('erro')
   })
 
-  it('CMC7 que não fecha mostra o número da foto e o número da conta', () => {
+  /**
+   * A operadora leu "Lido 9, calculado 8" e disse "não entendi"; o Gabriel foi
+   * atrás e concluiu "nunca aprendi sobre isso, por que a Amanda faria isso no
+   * trabalho?". A explicação existe para dizer o que fazer, não para ensinar
+   * como o CMC7 funciona por dentro.
+   */
+  it('a explicação do CMC7 não usa jargão nem ensina a conta', () => {
     const alerta = validarCheque(
       cheque({
         cmc7: { bloco1: '74801680', bloco2: BLOCO2_OK, bloco3: BLOCO3_OK, digitos_duvidosos: [] },
@@ -131,11 +143,30 @@ describe('a explicação usa os números do cheque, não texto genérico', () =>
     ).alertas.find((a) => a.codigo === 'cmc7_bloco1_dv_invalido')!
 
     const explicacao = explicarAlerta(alerta)!
-    // Era exatamente isto que a operadora não entendia em "Lido 9, calculado 8".
-    expect(explicacao.oQue).toContain('Na foto ele está 0')
-    expect(explicacao.oQue).toContain('a conta dá 9')
-    expect(explicacao.comparacao?.map((l) => l.valor)).toContain('74801680')
-    expect(explicacao.oQueFazer.length).toBeGreaterThan(1)
+    const tudo = [explicacao.oQue, explicacao.porQue, ...explicacao.oQueFazer]
+      .join(' ')
+      .toLowerCase()
+
+    for (const jargao of ['bloco', 'dígito verificador', 'somatória', 'módulo', 'luhn']) {
+      expect(tudo, jargao).not.toContain(jargao)
+    }
+    // O que ela precisa: olhar a foto e corrigir.
+    expect(tudo).toContain('foto')
+    expect(tudo).toContain('corrigir')
+  })
+
+  it('a explicação do que não foi lido é curta e diz o que fazer', () => {
+    const explicacao = explicarAlerta({
+      nivel: 'amarelo',
+      codigo: 'campos_nao_lidos',
+      titulo: 'Não conseguimos ler: valor em números',
+      detalhe: '',
+      dados: { campos: 'valor em números' },
+    })!
+    expect(explicacao.oQue).toContain('valor em números')
+    // Curta de propósito: "apenas isso", como ela pediu.
+    expect(explicacao.oQueFazer.length).toBeLessThanOrEqual(3)
+    expect(explicacao.comparacao).toBeUndefined()
   })
 
   it('bom para anterior mostra as duas datas e qual o banco enxerga', () => {

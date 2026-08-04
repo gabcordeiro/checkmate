@@ -5,6 +5,7 @@ import CheckLancado from './CheckLancado'
 import Cmc7 from './Cmc7'
 import FotoCheque from './FotoCheque'
 import ListaAlertas from './ListaAlertas'
+import NaoLido, { TextoComLacunas } from './NaoLido'
 import StatusBadge from './StatusBadge'
 import { formatarBRL } from '@/lib/format'
 import { formatarDataBr } from '@/lib/validation/datas'
@@ -22,13 +23,24 @@ export function valorParaDigitar(cheque: ChequeComFoto): string {
   return Number(cheque.valor_numerico).toFixed(2).replace('.', ',')
 }
 
+/**
+ * CMC7 pronto para ir ao clipboard — vazio enquanto houver `?`.
+ *
+ * Um CMC7 com lacuna colado no sistema da empresa é pior que célula vazia:
+ * vira um número que parece completo e não é. Célula vazia ela percebe.
+ */
+export function cmc7ParaCopiar(cheque: ChequeComFoto): string {
+  const cmc7 = cheque.cmc7_completo ?? ''
+  return cmc7.includes('?') ? '' : cmc7
+}
+
 export function linhaTabulada(cheque: ChequeComFoto): string {
   return [
     cheque.emitente ?? '',
     cheque.numero_cheque ?? '',
     formatarDataBr(cheque.data_efetiva ?? cheque.data_emissao),
     valorParaDigitar(cheque),
-    cheque.cmc7_completo ?? '',
+    cmc7ParaCopiar(cheque),
   ].join('\t')
 }
 
@@ -47,6 +59,7 @@ export default function LinhaCheque({
 }) {
   const dataEfetiva = formatarDataBr(cheque.data_efetiva ?? cheque.data_emissao)
   const valor = valorParaDigitar(cheque)
+  const naoLeu = (campo: string) => (cheque.nao_lidos ?? []).includes(campo as never)
 
   return (
     /**
@@ -76,9 +89,31 @@ export default function LinhaCheque({
               {cheque.emitente?.trim() || 'sem emitente'}
             </span>
           )}
-          <span className="font-medium tabular-nums">nº {cheque.numero_cheque ?? '—'}</span>
+          <span className="font-medium tabular-nums">
+            nº{' '}
+            {cheque.numero_cheque ? (
+              <TextoComLacunas
+                texto={cheque.numero_cheque}
+                campo="o nº do cheque"
+                onCorrigir={onEditar}
+              />
+            ) : naoLeu('numero_cheque') ? (
+              <NaoLido campo="o nº do cheque" onCorrigir={onEditar} variante="bloco" />
+            ) : (
+              '—'
+            )}
+          </span>
           <span className="tabular-nums text-tinta-600">
-            {dataEfetiva}
+            {naoLeu('data_emissao') && dataEfetiva === '—' ? (
+              <NaoLido
+                campo="a data do cheque"
+                rotulo="data"
+                onCorrigir={onEditar}
+                variante="bloco"
+              />
+            ) : (
+              dataEfetiva
+            )}
             {cheque.bom_para && cheque.bom_para !== cheque.data_emissao && (
               <span className="text-xs text-tinta-400">
                 {' '}
@@ -88,7 +123,16 @@ export default function LinhaCheque({
             )}
           </span>
           <span className="font-semibold tabular-nums">
-            {formatarBRL(cheque.valor_numerico === null ? null : Number(cheque.valor_numerico))}
+            {cheque.valor_numerico === null && naoLeu('valor_numerico') ? (
+              <NaoLido
+                campo="o valor em números"
+                rotulo="valor"
+                onCorrigir={onEditar}
+                variante="bloco"
+              />
+            ) : (
+              formatarBRL(cheque.valor_numerico === null ? null : Number(cheque.valor_numerico))
+            )}
           </span>
           <span className="text-xs text-tinta-500">
             {cheque.banco_nome || cheque.banco_codigo || '—'}
@@ -108,13 +152,20 @@ export default function LinhaCheque({
           bloco3={cheque.cmc7_bloco3}
           duvidosos={cheque.digitos_duvidosos ?? []}
           sugestoes={cheque.cmc7_sugestoes ?? []}
+          onCorrigir={onEditar}
         />
 
         <ListaAlertas alertas={cheque.alertas ?? []} />
 
         {cheque.valor_extenso_texto && (
           <p className="text-xs italic text-tinta-500">
-            Extenso lido: “{cheque.valor_extenso_texto}”
+            Extenso lido: “
+            <TextoComLacunas
+              texto={cheque.valor_extenso_texto}
+              campo="esta parte do valor por extenso"
+              onCorrigir={onEditar}
+            />
+            ”
             {cheque.valor_extenso_convertido !== null && (
               <> → {formatarBRL(Number(cheque.valor_extenso_convertido))}</>
             )}

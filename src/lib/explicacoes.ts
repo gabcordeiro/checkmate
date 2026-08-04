@@ -47,50 +47,23 @@ const CATALOGO: Record<string, Construtor> = {
   // ---------------------------------------------------------------------------
   // CMC7
   // ---------------------------------------------------------------------------
-  dv_invalido: (a) => ({
-    oQue: `O último número do grupo serve para conferir os outros. Na foto ele está ${texto(
-      a,
-      'naFoto',
-    )}, mas a conta dá ${texto(a, 'pelaConta')}.`,
+  dv_invalido: () => ({
+    oQue: 'O número do CMC7 tem uma conferência embutida, e ela não bateu com o que lemos.',
     porQue:
-      'Quando esses dois não batem, é sinal de que algum número do grupo foi lido errado. Se você lançar assim, o sistema da empresa recusa — ou pior, aceita e vira um cheque cadastrado com o número errado.',
+      'Quase sempre significa que um dígito foi lido errado. Lançado assim, o sistema da empresa recusa — ou aceita e cadastra o cheque com o número trocado.',
     oQueFazer: [
-      'Olhe o rodapé do cheque na foto (dá para ampliar clicando na miniatura).',
-      'Compare número por número com o que está na tela.',
-      'Achou a diferença? Use "Corrigir" — ao salvar, a conta é refeita.',
-      'Não dá para ler na foto? Tire outra, focando só o rodapé.',
-    ],
-    comparacao: [
-      { rotulo: 'O que lemos na foto', valor: texto(a, 'grupoLido'), tom: 'erro' },
-      { rotulo: 'Último número lido', valor: texto(a, 'naFoto'), tom: 'erro' },
-      { rotulo: 'Último número pela conta', valor: texto(a, 'pelaConta'), tom: 'ok' },
-    ],
-    exemplo:
-      'É a mesma ideia do dígito depois do traço no CPF: ele não é escolhido, é calculado a partir dos outros. Se não bate, algum número antes dele está errado.',
-  }),
-
-  dv_resolvido: (a) => ({
-    oQue: `A IA ficou em dúvida no ${texto(a, 'posicao')}º número do grupo, e a conta de conferência resolveu a dúvida.`,
-    porQue:
-      'Esses pares se confundem muito em foto: 3 e 8, 1 e 7, 0 e 6. A conta só fecha com um deles, então dá para saber qual é o certo sem precisar decifrar no olho.',
-    oQueFazer: [
-      'O CMC7 na tela já está com a correção aplicada.',
-      'Pode copiar e lançar — o número corrigido é o que vai para o clipboard.',
-      'Se quiser confirmar, amplie a foto e olhe o dígito destacado.',
-    ],
-    comparacao: [
-      { rotulo: 'Como a IA leu', valor: texto(a, 'original'), tom: 'neutro' },
-      { rotulo: 'Corrigido pela conta', valor: texto(a, 'corrigido'), tom: 'ok' },
+      'Amplie a foto (clique na miniatura) e olhe o rodapé do cheque.',
+      'Compare com o CMC7 da tela.',
+      'Achou a diferença? Use "Corrigir".',
     ],
   }),
 
   dv_ambiguo: () => ({
-    oQue: 'Mais de uma leitura possível passa na conta de conferência, então a conta não decide sozinha qual é a certa.',
-    porQue:
-      'Lançar o CMC7 errado significa cadastrar o cheque no nome de outra conta. Aqui não dá para automatizar: precisa do olho.',
+    oQue: 'Um dos números do CMC7 tem mais de uma leitura possível e a conferência interna não decide qual é.',
+    porQue: 'Lançar o CMC7 errado cadastra o cheque no nome de outra conta.',
     oQueFazer: [
-      'Amplie a foto e olhe o dígito destacado em amarelo na tela.',
-      'Use "Corrigir" para escrever o número que você viu.',
+      'Amplie a foto e olhe o dígito destacado na tela.',
+      'Use "Corrigir" para escrever o que você viu.',
     ],
   }),
 
@@ -200,7 +173,7 @@ const CATALOGO: Record<string, Construtor> = {
   }),
 
   valor_extenso_ausente: () => ({
-    oQue: 'Não conseguimos ler a linha do valor por extenso.',
+    oQue: 'A linha do valor por extenso está em branco no cheque.',
     porQue:
       'É o extenso que manda quando os dois valores discordam. Sem ele, a comparação que evita a devolução mais cara não acontece.',
     oQueFazer: [
@@ -210,8 +183,8 @@ const CATALOGO: Record<string, Construtor> = {
     ],
   }),
 
-  valor_extenso_parcial: () => ({
-    oQue: 'Entendemos parte do valor por extenso, mas havia palavras que não reconhecemos.',
+  valor_extenso_palavras: () => ({
+    oQue: 'Entendemos o valor por extenso, mas havia palavras que não reconhecemos.',
     porQue:
       'O valor que calculamos pode estar incompleto, e com isso a comparação com o número pode estar errada — para mais ou para menos.',
     oQueFazer: [
@@ -320,6 +293,35 @@ const CATALOGO: Record<string, Construtor> = {
     oQueFazer: [
       'Amplie a foto e confira só esses campos.',
       'Se algum estiver errado, corrija.',
+    ],
+  }),
+
+  campos_nao_lidos: (a) => ({
+    oQue: `O sistema não conseguiu ler: ${texto(a, 'campos')}.`,
+    porQue: 'Onde não deu para ler aparece um ? vermelho na tela, em vez de um número inventado.',
+    oQueFazer: [
+      'Amplie a foto do cheque.',
+      'Clique em "Corrigir" e digite o que você vê.',
+      'O ? some assim que você salvar.',
+    ],
+  }),
+
+  data_emissao_ausente: () => ({
+    oQue: 'O campo da data do cheque está em branco.',
+    porQue: 'Cheque sem data o banco devolve.',
+    oQueFazer: [
+      'Amplie a foto e confirme que o campo está vazio mesmo.',
+      'Se estiver, peça ao cliente para preencher e assinar a alteração.',
+    ],
+  }),
+
+  valor_extenso_parcial: () => ({
+    oQue: 'Uma parte da frase do valor por extenso não deu para ler.',
+    porQue:
+      'Sem a frase inteira não dá para comparar com o valor em números — e comparar pela metade daria alarme falso.',
+    oQueFazer: [
+      'Amplie a foto e leia a linha do extenso.',
+      'Complete em "Corrigir": a comparação roda sozinha ao salvar.',
     ],
   }),
 

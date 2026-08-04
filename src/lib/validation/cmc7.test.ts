@@ -59,7 +59,49 @@ describe('checarBloco', () => {
   it('marca bloco ausente', () => {
     const r = checarBloco(2, null)
     expect(r.presente).toBe(false)
-    expect(r.dvOk).toBe(false)
+    expect(r.avaliavel).toBe(false)
+  })
+})
+
+/**
+ * Regressão do falso positivo que confundiu a operadora: o app acusava erro
+ * num bloco que estava correto. A causa era calcular a conferência interna
+ * sobre um bloco que não estava íntegro — sem base para afirmar, não se afirma.
+ */
+describe('a conferência interna só roda com o bloco íntegro', () => {
+  it('bloco com tamanho errado não é avaliado', () => {
+    const r = checarBloco(1, '021017369') // 9 dígitos onde o padrão tem 8
+    expect(r.tamanhoOk).toBe(false)
+    expect(r.avaliavel).toBe(false)
+    // Não afirma que o número está errado: o problema é o tamanho, e quem
+    // reporta isso é o alerta de tamanho.
+    expect(r.dvOk).toBe(true)
+    expect(r.dvEsperado).toBeNull()
+  })
+
+  it('bloco com ? não é avaliado', () => {
+    const r = checarBloco(1, '748016?0')
+    expect(r.ilegivel).toBe(true)
+    expect(r.avaliavel).toBe(false)
+    expect(r.dvOk).toBe(true)
+  })
+
+  it('o ? conta no tamanho, então não encurta o bloco', () => {
+    const r = checarBloco(1, '748016?0')
+    expect(r.digitos).toBe('748016?0')
+    expect(r.tamanhoOk).toBe(true)
+  })
+
+  it('bloco íntegro continua sendo avaliado normalmente', () => {
+    expect(checarBloco(1, BLOCO1_OK).avaliavel).toBe(true)
+    expect(checarBloco(1, '74801637').dvOk).toBe(false)
+  })
+
+  it('não tenta resolver dígito duvidoso em bloco com ?', () => {
+    const combinacoes = combinacoesQueFecham(1, '7480?680', [
+      { bloco: 1, posicao: 7, alternativas: ['8', '3'] },
+    ])
+    expect(combinacoes).toEqual([])
   })
 })
 
@@ -133,5 +175,33 @@ describe('montagem e leitura dos campos', () => {
   it('extrai banco e agência do bloco 1', () => {
     expect(bancoDoBloco1(BLOCO1_OK)).toBe('748')
     expect(agenciaDoBloco1(BLOCO1_OK)).toBe('0163')
+  })
+})
+
+/**
+ * O `?` precisa sobreviver até o valor gravado. Se ele sumisse na montagem, o
+ * CMC7 salvo pareceria completo — e a tela, que decide pelo `?` se libera o
+ * botão de copiar, mandaria para o sistema da empresa um número mais curto que
+ * o do cheque, sem nada avisando.
+ */
+describe('a lacuna sobrevive à montagem do CMC7', () => {
+  it('montarCmc7Completo preserva o ?', () => {
+    expect(montarCmc7Completo('7480?630', BLOCO2_OK, BLOCO3_OK)).toBe(
+      `7480?630 ${BLOCO2_OK} ${BLOCO3_OK}`,
+    )
+  })
+
+  it('cmc7Cru preserva o ? e mantém os 30 caracteres', () => {
+    const cru = cmc7Cru('7480?630', BLOCO2_OK, BLOCO3_OK)
+    expect(cru).toContain('?')
+    expect(cru).toHaveLength(30)
+  })
+
+  it('banco e agência não são inventados a partir de um bloco com lacuna', () => {
+    // Descartando o `?`, `748?1630` viraria `7481630` e a agência sairia como
+    // "1630" — um número que não está no cheque, comparado com o impresso.
+    expect(agenciaDoBloco1('748?1630')).toBeNull()
+    expect(bancoDoBloco1('748?1630')).toBe('748')
+    expect(bancoDoBloco1('7?801630')).toBeNull()
   })
 })

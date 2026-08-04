@@ -8,6 +8,7 @@ import Cmc7 from './Cmc7'
 import EditarCheque from './EditarCheque'
 import FotoCheque from './FotoCheque'
 import ListaAlertas from './ListaAlertas'
+import NaoLido, { TextoComLacunas } from './NaoLido'
 import PainelDeslizante from './PainelDeslizante'
 import StatusBadge from './StatusBadge'
 import { linhaTabulada, valorParaDigitar } from './LinhaCheque'
@@ -204,6 +205,12 @@ export default function ModoConferencia({
       switch (tecla) {
         case 'c':
           evento.preventDefault()
+          // CMC7 com `?` não vai para o clipboard: colado no sistema da
+          // empresa, uma lacuna no meio dos 30 dígitos é pior que nada.
+          if ((atual.cmc7_completo ?? '').includes('?')) {
+            sinalizar('Complete os ? antes de copiar o CMC7')
+            break
+          }
           void copiar(atual.cmc7_completo ?? '', 'CMC7')
           break
         case 'v':
@@ -292,6 +299,7 @@ export default function ModoConferencia({
     )
   }
 
+  const naoLeu = (campo: string) => (atual.nao_lidos ?? []).includes(campo as never)
   const cmc7 = atual.cmc7_completo ?? ''
   const valor = valorParaDigitar(atual)
   const dataTexto = formatarDataBr(atual.data_efetiva ?? atual.data_emissao)
@@ -418,13 +426,31 @@ export default function ModoConferencia({
             </div>
             <div>
               <dt className="text-[11px] font-medium text-tinta-500">Data efetiva</dt>
-              <dd className="text-sm font-medium tabular-nums">{dataTexto}</dd>
+              <dd className="text-sm font-medium tabular-nums">
+                {dataTexto === '—' && naoLeu('data_emissao') ? (
+                  <NaoLido
+                    campo="a data do cheque"
+                    variante="bloco"
+                    onCorrigir={() => setEditando(true)}
+                    onVerFoto={() => setFotoAberta(true)}
+                  />
+                ) : (
+                  dataTexto
+                )}
+              </dd>
             </div>
             <div>
               <dt className="text-[11px] font-medium text-tinta-500">Valor</dt>
               <dd className="text-sm font-semibold tabular-nums">
-                {formatarBRL(
-                  atual.valor_numerico === null ? null : Number(atual.valor_numerico),
+                {atual.valor_numerico === null && naoLeu('valor_numerico') ? (
+                  <NaoLido
+                    campo="o valor em números"
+                    variante="bloco"
+                    onCorrigir={() => setEditando(true)}
+                    onVerFoto={() => setFotoAberta(true)}
+                  />
+                ) : (
+                  formatarBRL(atual.valor_numerico === null ? null : Number(atual.valor_numerico))
                 )}
               </dd>
             </div>
@@ -438,19 +464,32 @@ export default function ModoConferencia({
               bloco3={atual.cmc7_bloco3}
               duvidosos={atual.digitos_duvidosos ?? []}
               sugestoes={atual.cmc7_sugestoes ?? []}
+              onCorrigir={() => setEditando(true)}
+              onVerFoto={() => setFotoAberta(true)}
+              semCopiar
             />
           </div>
 
           {/* Botões de cópia com a tecla ao lado: quem usa teclado aprende sozinha. */}
           <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => void copiar(cmc7, 'CMC7')}
-              disabled={!cmc7}
-              className="btn-primario px-3 py-1.5 text-xs"
-            >
-              Copiar CMC7 <kbd className="font-mono opacity-60">C</kbd>
-            </button>
+            {cmc7.includes('?') ? (
+              <button
+                type="button"
+                onClick={() => setEditando(true)}
+                className="rounded-xl border border-devolve-border bg-devolve-bg px-3 py-1.5 text-xs font-medium text-devolve-text"
+              >
+                Complete os ? para copiar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void copiar(cmc7, 'CMC7')}
+                disabled={!cmc7}
+                className="btn-primario px-3 py-1.5 text-xs"
+              >
+                Copiar CMC7 <kbd className="font-mono opacity-60">C</kbd>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void copiar(valor, 'valor')}
@@ -478,7 +517,14 @@ export default function ModoConferencia({
 
           {atual.valor_extenso_texto && (
             <p className="text-xs italic text-tinta-500">
-              Extenso lido: “{atual.valor_extenso_texto}”
+              Extenso lido: “
+              <TextoComLacunas
+                texto={atual.valor_extenso_texto}
+                campo="esta parte do valor por extenso"
+                onCorrigir={() => setEditando(true)}
+                onVerFoto={() => setFotoAberta(true)}
+              />
+              ”
               {atual.valor_extenso_convertido !== null && (
                 <> → {formatarBRL(Number(atual.valor_extenso_convertido))}</>
               )}

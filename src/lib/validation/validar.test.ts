@@ -32,6 +32,7 @@ function cheque(over: Partial<ChequeExtraido> = {}): ChequeExtraido {
     assinatura_presente: true,
     rasuras_detectadas: [],
     confianca_por_campo: {},
+    nao_lidos: [],
     observacoes: null,
     ...over,
   }
@@ -94,10 +95,31 @@ describe('extenso × numérico (Lei do Cheque, art. 12)', () => {
     )
   })
 
-  it('valor numérico ausente é amarelo e não gera divergência falsa', () => {
-    const lista = codigos(cheque({ valor_numerico: null }))
-    expect(lista).toContain('valor_numerico_ausente')
+  it('valor numérico não lido não gera divergência falsa', () => {
+    const lista = codigos(cheque({ valor_numerico: null, nao_lidos: ['valor_numerico'] }))
+    expect(lista).toContain('campos_nao_lidos')
     expect(lista).not.toContain('extenso_divergente')
+  })
+
+  /**
+   * O caso que a operadora apontou: o extenso é manuscrito e nem sempre sai
+   * inteiro. Comparar meia frase com o número produziria um vermelho
+   * "o banco vai devolver" por erro de leitura NOSSO.
+   */
+  it('extenso lido pela metade NÃO vira alerta vermelho', () => {
+    const r = validarCheque(
+      cheque({ valor_extenso_texto: 'quatrocentos e ? reais', valor_numerico: 1842 }),
+      HOJE,
+    )
+    expect(r.status).toBe('conferir')
+    expect(r.alertas.map((a) => a.codigo)).toContain('valor_extenso_parcial')
+    expect(r.alertas.map((a) => a.codigo)).not.toContain('extenso_divergente')
+    // Sem valor comparável, nada é gravado como se fosse o valor do cheque.
+    expect(r.valor_extenso_convertido).toBeNull()
+  })
+
+  it('cheque realmente sem extenso continua sendo apontado', () => {
+    expect(codigos(cheque({ valor_extenso_texto: null }))).toContain('valor_extenso_ausente')
   })
 })
 
@@ -125,14 +147,30 @@ describe('datas', () => {
     expect(r.data_efetiva).toBe('2026-09-30')
   })
 
-  it('data de emissão ilegível é VERMELHO', () => {
+  it('cheque SEM data é VERMELHO (o banco devolve)', () => {
     const r = validarCheque(cheque({ data_emissao: null }), HOJE)
     expect(r.status).toBe('vermelho')
-    expect(r.alertas.map((a) => a.codigo)).toContain('data_emissao_ilegivel')
+    expect(r.alertas.map((a) => a.codigo)).toContain('data_emissao_ausente')
   })
 
-  it('data inexistente (31/02) conta como ilegível', () => {
-    expect(codigos(cheque({ data_emissao: '2026-02-31' }))).toContain('data_emissao_ilegivel')
+  /**
+   * Distinção que o `?` tornou possível: "não consegui ler" é problema nosso,
+   * ela digita e resolve. Antes isso dava o mesmo vermelho de "cheque sem
+   * data" e assustava por uma falha de leitura.
+   */
+  it('data que a IA não conseguiu ler é AMARELO, não vermelho', () => {
+    const r = validarCheque(
+      cheque({ data_emissao: null, nao_lidos: ['data_emissao'] }),
+      HOJE,
+    )
+    expect(r.status).toBe('conferir')
+    const lista = r.alertas.map((a) => a.codigo)
+    expect(lista).toContain('campos_nao_lidos')
+    expect(lista).not.toContain('data_emissao_ausente')
+  })
+
+  it('data inexistente (31/02) conta como cheque sem data', () => {
+    expect(codigos(cheque({ data_emissao: '2026-02-31' }))).toContain('data_emissao_ausente')
   })
 
   it('data rasurada é VERMELHO mesmo com a data legível', () => {
@@ -209,7 +247,10 @@ describe('CMC7', () => {
       }),
       HOJE,
     )
-    expect(r.status).toBe('conferir')
+    // Resolvido sozinho não vira alerta: não há nada para ela fazer. O dígito
+    // certo aparece destacado no CMC7 e o contador diz "1 número corrigido".
+    expect(r.alertas).toEqual([])
+    expect(r.status).toBe('ok')
     expect(r.cmc7_sugestoes).toEqual([
       {
         bloco: 1,
@@ -219,16 +260,6 @@ describe('CMC7', () => {
         bloco_corrigido: BLOCO1_OK,
       },
     ])
-    // A frase pode ser reescrita; o que não pode mudar é o fato que ela carrega.
-    const alerta = r.alertas.find((a) => a.codigo === 'cmc7_bloco1_dv_resolvido')
-    expect(alerta?.detalhe).toContain('7º número')
-    expect(alerta?.detalhe).toContain('é 3')
-    expect(alerta?.dados).toMatchObject({
-      bloco: 1,
-      posicao: 7,
-      corrigido: BLOCO1_OK,
-      original: '74801680',
-    })
   })
 
   it('DV que não fecha e nenhuma alternativa resolve manda refotografar', () => {
@@ -244,11 +275,53 @@ describe('CMC7', () => {
       HOJE,
     )
     const alerta = r.alertas.find((a) => a.codigo === 'cmc7_bloco1_dv_invalido')
-    // Os dois números que a operadora precisa comparar ficam em `dados`, para a
-    // tela de explicação montar o lado a lado sem extrair de uma frase.
-    expect(alerta?.dados).toMatchObject({ bloco: 1, naFoto: '0', pelaConta: '9' })
-    expect(alerta?.detalhe).toContain('tire outra foto')
+    expect(alerta?.nivel).toBe('amarelo')
+    expect(alerta?.titulo).toBe('Confira o CMC7 na foto')
+    // Nada de "bloco", "dígito verificador" ou somatória: a operadora não usa
+    // esses conceitos no trabalho e travou neles no teste.
+    const texto = `${alerta?.titulo} ${alerta?.detalhe}`.toLowerCase()
+    for (const jargao of ['bloco', 'verificador', 'somatória', 'módulo']) {
+      expect(texto).not.toContain(jargao)
+    }
     expect(r.cmc7_sugestoes).toEqual([])
+  })
+
+  it('bloco com ? não gera alerta de CMC7 — o ? na tela já diz', () => {
+    const r = validarCheque(
+      cheque({
+        cmc7: {
+          bloco1: '748016?0',
+          bloco2: BLOCO2_OK,
+          bloco3: BLOCO3_OK,
+          digitos_duvidosos: [],
+        },
+      }),
+      HOJE,
+    )
+    const lista = r.alertas.map((a) => a.codigo)
+    expect(lista.filter((c) => c.startsWith('cmc7_bloco'))).toEqual([])
+    // Aparece só no aviso único de campos não lidos, para o cheque não sumir
+    // do painel do lote.
+    expect(lista).toContain('campos_nao_lidos')
+  })
+
+  /** Regressão do falso positivo: bloco com tamanho errado dava DOIS alertas. */
+  it('bloco com tamanho errado gera UM alerta, não dois', () => {
+    const r = validarCheque(
+      cheque({
+        cmc7: {
+          bloco1: '021017369',
+          bloco2: BLOCO2_OK,
+          bloco3: BLOCO3_OK,
+          digitos_duvidosos: [],
+        },
+        banco_codigo: null,
+        agencia: null,
+      }),
+      HOJE,
+    )
+    const doCmc7 = r.alertas.map((a) => a.codigo).filter((c) => c.startsWith('cmc7_bloco'))
+    expect(doCmc7).toEqual(['cmc7_bloco1_tamanho'])
   })
 
   it('bloco ausente é amarelo', () => {

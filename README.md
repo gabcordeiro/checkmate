@@ -67,6 +67,8 @@ Editor:
    pasta.
 3. `supabase/migrations/0003_revisao_manual.sql` — coluna `revisado_manualmente`, usada pela
    correção manual da operadora.
+4. `supabase/migrations/0004_nao_lidos.sql` — coluna `nao_lidos`, com os campos que a IA não
+   conseguiu ler (viram o `?` vermelho na tela).
 
 Ou, com a CLI:
 
@@ -186,6 +188,50 @@ números; o catálogo (`src/lib/explicacoes.ts`) ENSINA. Assim a regra continua 
 carregar texto didático, e um teste garante que todo alerta que o validador sabe emitir tem
 explicação escrita — se alguém criar um alerta novo sem explicar, a suíte quebra.
 
+### O `?`: o que não foi lido não vira alerta
+
+A segunda rodada de teste mostrou que explicar melhor o dígito verificador era resolver o
+problema errado. Nem a operadora nem o dono do produto sabem o que é isso, e não precisam —
+é conceito interno do CMC7, não algo que se use conferindo cheque. A frase que fechou o
+assunto foi *"por que a Amanda não faz isso no trabalho?"*.
+
+O desenho veio da própria operadora: **mostre o que você leu e marque em vermelho o que não
+leu.** Um `?` no lugar do caractere, e quem quiser saber mais clica e lê uma frase — *"o
+sistema não conseguiu ler este número"* — com os botões de corrigir e ver a foto. Nada além
+disso.
+
+Como isso aparece no código:
+
+- **O modelo declara a lacuna.** Em campo de texto (CMC7, extenso, nominal, emitente, nº,
+  agência, conta) ele escreve `?` dentro do próprio valor. Em campo tipado (valor, datas) não
+  cabe `?` num número, então ele devolve `null` e lista o campo em `nao_lidos: string[]`. De
+  quebra isso desfaz uma ambiguidade antiga: `bom_para_anotado: null` agora distingue "o cheque
+  não tem essa anotação" de "não consegui ler".
+- **`digitos_duvidosos` ficou com um significado só:** *"li, mas pode ser 3 ou 8"*. `?` é
+  *"não li"*. Antes os dois casos vinham misturados no mesmo campo.
+- **Nada se afirma sobre o que não se leu.** `checarBloco()` só calcula a conferência interna
+  quando o bloco está íntegro — tamanho certo e sem `?` (`avaliavel`). Isso consertou um falso
+  positivo real: um bloco lido com 9 dígitos onde o padrão tem 8 gerava DOIS alertas para a
+  mesma causa, e o segundo acusava um número de estar errado quando o problema era outro.
+- **Extenso lido pela metade não vira vermelho.** `parseExtenso()` devolve `parcial: true` e a
+  comparação com o valor numérico **não roda** — comparar produziria um valor menor que o do
+  cheque e um "o banco vai devolver" causado por falha nossa de leitura. Falso vermelho é o pior
+  defeito possível aqui: destrói a confiança no semáforo, que é o que o produto vende. Com
+  cheque manuscrito, que é a maioria, o extenso é justamente o campo mais difícil.
+- **`?` não vai para o clipboard.** Enquanto houver lacuna, o botão de copiar CMC7 vira
+  "Complete os ? para copiar" e o atalho `C` avisa em vez de copiar. Um CMC7 furado colado no
+  sistema da empresa é pior que uma célula vazia — a célula vazia ela percebe.
+- **A lacuna sobrevive à gravação.** `montarCmc7Completo()` preserva o `?` (diferente de
+  `somenteDigitos()`, que o descartaria e encurtaria o número em silêncio). É por esse valor
+  gravado que a tela decide se libera a cópia.
+- **Corrigir apaga a marca.** Ao salvar, o campo editado sai de `nao_lidos` e o `?` some — quem
+  leu foi ela, que é quem manda.
+
+O único alerta de CMC7 que sobrou é o caso perigoso de verdade: tamanho certo, nenhum `?`,
+nenhuma dúvida declarada, e mesmo assim a conferência do número não bate — ou seja, a IA leu
+algum dígito errado sem perceber. Parece certo e não é, então avisa. Mas em uma linha, sem
+"bloco", sem "dígito verificador" e sem somatória: *"Confira o CMC7 na foto."*
+
 ### Paleta e identidade
 
 A regra que manda em tudo: **verde/amarelo/vermelho são reservados** para o semáforo de
@@ -243,15 +289,19 @@ ambígua tem de virar entrada em `digitos_duvidosos` com as alternativas.
 
 TypeScript puro, sem rede, sem React, 100% testável. É aqui que mora o valor do produto.
 
-- **`cmc7.ts`** — DV módulo 10 (Luhn) de cada bloco (8/12/10 dígitos). Quando o DV não fecha,
-  testa as combinações das alternativas dos dígitos duvidosos e lista **só as que fecham**:
-  "Provavelmente 3 — com 8 o verificador não bate". Nenhuma combinação fecha → refotografar.
+- **`cmc7.ts`** — conferência interna módulo 10 (Luhn) de cada bloco (8/12/10 dígitos), rodada
+  **só quando o bloco está íntegro**: tamanho certo e sem `?`. Quando ela não fecha, testa as
+  combinações das alternativas dos dígitos duvidosos; se exatamente uma fecha, o dígito é
+  corrigido em silêncio (verde na tela, "1 número corrigido") e **nenhum alerta é emitido** —
+  não há o que a operadora fazer. Nenhuma fecha → o aviso curto de conferir na foto.
   (Os três blocos têm quantidade ímpar de dígitos de dados — 7, 11 e 9 — então a alternância
   de pesos dá o mesmo resultado da esquerda ou da direita: o algoritmo não depende disso.)
 - **`extenso.ts`** — parser extenso→número em pt-BR: unidades a bilhões, centavos, fração
   `/100`, e as grafias que aparecem em cheque de verdade (`hum mil`, `quatrossentos`,
   `cincoenta`, `dusentos`). Divergência com o numérico é **alerta vermelho**, porque pela Lei
-  do Cheque (7.357/85, art. 12) vale o extenso — e o banco devolve.
+  do Cheque (7.357/85, art. 12) vale o extenso — e o banco devolve. Transcrição com `?` devolve
+  `parcial: true` e **não é comparada**: metade de uma frase daria um valor menor e um vermelho
+  falso.
 - **`datas.ts` + `index.ts`** — "bom para" anterior à data escrita, data ilegível/rasurada e
   janelas de plausibilidade de 12 meses. A `data_efetiva` (que manda na ordenação) é o "bom
   para" quando ele é coerente com a emissão, senão a data escrita no cheque.

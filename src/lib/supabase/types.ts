@@ -9,7 +9,13 @@
  * e todo `.insert()`/`.select()` para de compilar.
  */
 
-import type { Alerta, DigitoDuvidoso, StatusCheque, SugestaoCmc7 } from '../validation/types'
+import type {
+  Alerta,
+  CampoNaoLido,
+  DigitoDuvidoso,
+  StatusCheque,
+  SugestaoCmc7,
+} from '../validation/types'
 
 export type ChequeRow = {
   id: string
@@ -41,6 +47,8 @@ export type ChequeRow = {
   assinatura_presente: boolean | null
   rasuras: string[]
   confianca: Record<string, string>
+  /** Campos tipados que a IA não conseguiu ler — viram `?` na tela. */
+  nao_lidos: CampoNaoLido[]
   observacoes: string | null
   status: StatusCheque
   alertas: Alerta[]

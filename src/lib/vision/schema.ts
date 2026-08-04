@@ -61,15 +61,15 @@ const cheque: JsonSchema = {
       properties: {
         bloco1: {
           type: ['string', 'null'],
-          description: 'Bloco 1 da tarja CMC7: 8 dígitos (banco + agência + DV).',
+          description: 'Bloco 1 da tarja CMC7: exatamente 8 caracteres, dígitos ou "?" onde não deu para ler.',
         },
         bloco2: {
           type: ['string', 'null'],
-          description: 'Bloco 2 da tarja CMC7: 12 dígitos (inclui o número do cheque + DV).',
+          description: 'Bloco 2 da tarja CMC7: exatamente 12 caracteres, dígitos ou "?" onde não deu para ler.',
         },
         bloco3: {
           type: ['string', 'null'],
-          description: 'Bloco 3 da tarja CMC7: 10 dígitos (conta + DV).',
+          description: 'Bloco 3 da tarja CMC7: exatamente 10 caracteres, dígitos ou "?" onde não deu para ler.',
         },
         digitos_duvidosos: { type: 'array', items: digitoDuvidoso },
       },
@@ -82,7 +82,8 @@ const cheque: JsonSchema = {
     },
     valor_extenso_texto: {
       type: ['string', 'null'],
-      description: 'Transcrição LITERAL do manuscrito por extenso, com os erros de grafia do emitente.',
+      description:
+        'Transcrição LITERAL do manuscrito por extenso, com os erros de grafia do emitente. Use "?" no lugar de palavra ilegível.',
     },
     data_emissao: { type: ['string', 'null'], description: 'Data escrita no cheque, YYYY-MM-DD.' },
     bom_para_anotado: {
@@ -102,6 +103,12 @@ const cheque: JsonSchema = {
       items: { type: 'string' },
     },
     confianca_por_campo: { type: 'array', items: confiancaCampo },
+    nao_lidos: {
+      type: 'array',
+      description:
+        'Nomes dos campos NÃO-texto que você tentou ler e não conseguiu (ex: ["valor_numerico","data_emissao"]). Campo que simplesmente não existe no cheque NÃO entra aqui. Em campos de texto use "?" no próprio valor em vez desta lista.',
+      items: { type: 'string' },
+    },
     observacoes: { type: ['string', 'null'] },
   },
   required: [
@@ -121,6 +128,7 @@ const cheque: JsonSchema = {
     'assinatura_presente',
     'rasuras_detectadas',
     'confianca_por_campo',
+    'nao_lidos',
     'observacoes',
   ],
   additionalProperties: false,

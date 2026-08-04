@@ -37,6 +37,7 @@ function linha(over: Partial<ChequeRow> = {}): ChequeRow {
     assinatura_presente: true,
     rasuras: [],
     confianca: {},
+    nao_lidos: [],
     observacoes: null,
     status: 'ok',
     alertas: [],
@@ -199,6 +200,37 @@ describe('revalidação depois da correção manual', () => {
     // Vermelho primeiro, mesmo com o alerta extra sendo adicionado depois.
     expect(comAmbos.alertas[0].nivel).toBe('vermelho')
     expect(comAmbos.alertas.map((a) => a.codigo)).toContain('foto_baixa_qualidade')
+  })
+
+  it('o ? fica guardado no CMC7 completo, não some na gravação', () => {
+    const guardado = colunasDoCheque(linhaParaExtraido(linha({ cmc7_bloco1: '7480?630' })))
+    // A tela decide pelo `?` se libera o botão de copiar. Se ele sumisse aqui,
+    // o botão liberaria um número mais curto que o do cheque.
+    expect(guardado.cmc7_completo).toContain('?')
+    expect(guardado.cmc7_bloco1).toBe('7480?630')
+    // Bloco com lacuna não é acusado de erro — o `?` na tela já diz o que houve.
+    expect(guardado.alertas.map((a) => a.codigo)).not.toContain('cmc7_bloco1_dv_invalido')
+  })
+
+  it('digitar o número que faltava tira o ? e o campo de nao_lidos', () => {
+    const original = linha({
+      cmc7_bloco1: '7480?630',
+      numero_cheque: null,
+      nao_lidos: ['numero_cheque'],
+    })
+    const antes = colunasDoCheque(linhaParaExtraido(original))
+    expect(antes.alertas.map((a) => a.codigo)).toContain('campos_nao_lidos')
+
+    const depois = colunasDoCheque(
+      aplicarEdicao(linhaParaExtraido(original), {
+        cmc7_bloco1: BLOCO1_OK,
+        numero_cheque: '123456',
+      }),
+    )
+    expect(depois.nao_lidos).toEqual([])
+    expect(depois.cmc7_completo).not.toContain('?')
+    expect(depois.alertas.map((a) => a.codigo)).not.toContain('campos_nao_lidos')
+    expect(depois.status).toBe('ok')
   })
 
   it('renormaliza a chave de agrupamento quando o emitente é corrigido', () => {

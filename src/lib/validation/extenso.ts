@@ -12,12 +12,22 @@
  */
 
 export interface ResultadoExtenso {
-  /** Valor final em reais, ou null se nada foi reconhecido. */
+  /** Valor final em reais, ou null se nada foi reconhecido / a leitura é parcial. */
   valor: number | null
   reais: number
   centavos: number
   /** true = reconhecemos ao menos um numeral. */
   interpretado: boolean
+  /**
+   * O modelo marcou com `?` um trecho que não conseguiu ler.
+   *
+   * Quando isso acontece NÃO se compara com o valor em números: faltando uma
+   * palavra ("quatrocentos e ? reais"), o parser produziria um valor menor que
+   * o real e o app gritaria "o banco vai devolver" por um erro de leitura
+   * NOSSO. Falso vermelho destrói a confiança no semáforo, que é o que o
+   * produto vende.
+   */
+  parcial: boolean
   /** Palavras que não são numeral nem conectivo conhecido. */
   palavrasIgnoradas: string[]
 }
@@ -147,7 +157,8 @@ export function normalizarTexto(texto: string): string {
     .replace(/\p{M}/gu, '') // marcas de acento soltas pelo NFD
     .toLowerCase()
     .replace(/[-–—]/g, ' ')
-    .replace(/[^a-z0-9/ ]/g, ' ')
+    // O "?" sobrevive: é a marca de "não consegui ler este trecho".
+    .replace(/[^a-z0-9/? ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -203,6 +214,8 @@ function comporValor(tokens: string[]): ComposicaoResultado {
     }
 
     if (CONECTIVOS.has(token) || CENTAVOS_WORDS.has(token)) continue
+    // O "?" já é reportado por `parcial`; não é "palavra estranha".
+    if (token.includes('?')) continue
 
     desconhecidas.push(token)
   }
@@ -226,11 +239,13 @@ function ultimoIndice(tokens: string[], predicado: (t: string) => boolean): numb
  *     trecho final couber em centavos (≤ 99)
  */
 export function parseExtenso(texto: string | null | undefined): ResultadoExtenso {
+  const parcial = (texto ?? '').includes('?')
   const vazio: ResultadoExtenso = {
     valor: null,
     reais: 0,
     centavos: 0,
     interpretado: false,
+    parcial,
     palavrasIgnoradas: [],
   }
   if (!texto || !texto.trim()) return vazio
@@ -310,6 +325,12 @@ export function parseExtenso(texto: string | null | undefined): ResultadoExtenso
     return { ...vazio, palavrasIgnoradas: parsedReais.desconhecidas }
   }
 
+  // Faltando um pedaço, o número que sairia daqui seria menor que o do cheque.
+  // Melhor não ter valor do que ter um valor errado que vira alerta vermelho.
+  if (parcial) {
+    return { ...vazio, palavrasIgnoradas: parsedReais.desconhecidas }
+  }
+
   const reais = parsedReais.valor
   const valor = Math.round((reais + centavos / 100) * 100) / 100
 
@@ -318,6 +339,7 @@ export function parseExtenso(texto: string | null | undefined): ResultadoExtenso
     reais,
     centavos,
     interpretado: true,
+    parcial: false,
     palavrasIgnoradas: [
       ...parsedReais.desconhecidas,
       ...(parsedCentavos?.desconhecidas ?? []),

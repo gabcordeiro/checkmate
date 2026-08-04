@@ -1,6 +1,8 @@
 'use client'
 
 import BotaoCopiar from './BotaoCopiar'
+import NaoLido from './NaoLido'
+import { ILEGIVEL } from '@/lib/validation/cmc7'
 import type { DigitoDuvidoso, SugestaoCmc7 } from '@/lib/validation/types'
 
 interface Props {
@@ -9,6 +11,13 @@ interface Props {
   bloco3: string | null
   duvidosos: DigitoDuvidoso[]
   sugestoes: SugestaoCmc7[]
+  onCorrigir?: () => void
+  onVerFoto?: () => void
+  /**
+   * Esconde o botão de copiar daqui — para telas que já têm o seu, com atalho
+   * de teclado. Sem isso o mesmo botão aparece duas vezes na conferência.
+   */
+  semCopiar?: boolean
 }
 
 type NumeroBloco = 1 | 2 | 3
@@ -34,16 +43,20 @@ function Bloco({
   valor,
   duvidosos,
   sugestoes,
+  onCorrigir,
+  onVerFoto,
 }: {
   numero: NumeroBloco
   valor: string | null
   duvidosos: DigitoDuvidoso[]
   sugestoes: SugestaoCmc7[]
+  onCorrigir?: () => void
+  onVerFoto?: () => void
 }) {
   if (!valor) {
     return (
       <span className="rounded bg-tinta-100 px-1.5 py-0.5 text-xs text-tinta-400">
-        bloco {numero} ilegível
+        grupo {numero} não saiu na foto
       </span>
     )
   }
@@ -52,19 +65,32 @@ function Bloco({
 
   return (
     <span className="font-mono text-[13px] tracking-tight">
-      {valor.split('').map((digito, indice) => {
+      {valor.split('').map((caractere, indice) => {
         const posicao = indice + 1
-        const duvidoso = doBloco.find((d) => d.posicao === posicao)
-        if (!duvidoso) return <span key={posicao}>{digito}</span>
 
+        // "Não consegui ler" — o pedido da operadora: mostra o que leu e marca
+        // o resto com `?` vermelho, em vez de um alerta explicando a conta.
+        if (caractere === ILEGIVEL) {
+          return (
+            <NaoLido
+              key={posicao}
+              campo="este número do CMC7"
+              onCorrigir={onCorrigir}
+              onVerFoto={onVerFoto}
+            />
+          )
+        }
+
+        const duvidoso = doBloco.find((d) => d.posicao === posicao)
+        if (!duvidoso) return <span key={posicao}>{caractere}</span>
+
+        // "Li, mas pode ser outro" — quando a conferência interna resolve, o
+        // dígito certo já está aplicado e fica verde; quando não resolve, fica
+        // amarelo para ela olhar na foto.
         const sugestao = sugestoes.find((s) => s.bloco === numero && s.posicao === posicao)
         const dica = sugestao
-          ? sugestao.descartados.length
-            ? `Provavelmente ${sugestao.digito} — com ${sugestao.descartados.join(
-                '/',
-              )} o verificador não bate.`
-            : `Verificador fecha com ${sugestao.digito}.`
-          : `Leitura duvidosa: ${duvidoso.alternativas.join(' ou ')}. O verificador não decide.`
+          ? `Corrigido para ${sugestao.digito}.`
+          : `Pode ser ${duvidoso.alternativas.join(' ou ')}. Confira na foto.`
 
         return (
           <span
@@ -73,11 +99,11 @@ function Bloco({
             aria-label={dica}
             className={
               sugestao
-                ? 'cursor-help rounded bg-ok-bg px-[1px] font-bold text-ok-text underline decoration-dotted'
+                ? 'cursor-help rounded bg-ok-bg px-[1px] font-bold text-ok-text'
                 : 'cursor-help rounded bg-conferir-bg px-[1px] font-bold text-conferir-text underline decoration-dotted'
             }
           >
-            {sugestao ? sugestao.digito : digito}
+            {sugestao ? sugestao.digito : caractere}
           </span>
         )
       })}
@@ -85,44 +111,66 @@ function Bloco({
   )
 }
 
-export default function Cmc7({ bloco1, bloco2, bloco3, duvidosos, sugestoes }: Props) {
+export default function Cmc7({
+  bloco1,
+  bloco2,
+  bloco3,
+  duvidosos,
+  sugestoes,
+  onCorrigir,
+  onVerFoto,
+  semCopiar = false,
+}: Props) {
   const blocos: Array<{ numero: NumeroBloco; valor: string | null }> = [
     { numero: 1, valor: bloco1 },
     { numero: 2, valor: bloco2 },
     { numero: 3, valor: bloco3 },
   ]
 
-  // O que a operadora vai digitar: os 30 dígitos, já com as correções que o
-  // dígito verificador confirmou (destacadas em verde na tela).
-  const paraCopiar = blocos
-    .map(({ numero, valor }) => aplicarSugestoes(valor, numero, sugestoes) ?? '')
-    .join('')
-
-  const completo = blocos.every((b) => b.valor)
+  const corrigidos = blocos.map(({ numero, valor }) => aplicarSugestoes(valor, numero, sugestoes))
+  const completo = corrigidos.every((b) => b)
+  const paraCopiar = corrigidos.join('')
+  // CMC7 com lacuna não pode ir para o clipboard: colado no sistema da empresa,
+  // um "?" no meio dos 30 dígitos é pior que não copiar nada.
+  const temLacuna = paraCopiar.includes(ILEGIVEL)
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="flex flex-wrap items-center gap-x-1.5">
-        {blocos.map(({ numero, valor }, indice) => (
+        {blocos.map(({ numero }, indice) => (
           <span key={numero} className="flex items-center gap-1.5">
             <Bloco
               numero={numero}
-              valor={aplicarSugestoes(valor, numero, sugestoes)}
+              valor={corrigidos[indice]}
               duvidosos={duvidosos}
               sugestoes={sugestoes}
+              onCorrigir={onCorrigir}
+              onVerFoto={onVerFoto}
             />
             {indice < blocos.length - 1 && <span className="text-tinta-300">·</span>}
           </span>
         ))}
       </span>
 
-      {completo && <BotaoCopiar texto={paraCopiar} rotulo="Copiar CMC7" />}
+      {!semCopiar && completo && !temLacuna && (
+        <BotaoCopiar texto={paraCopiar} rotulo="Copiar CMC7" />
+      )}
+
+      {!semCopiar && completo && temLacuna && (
+        <button
+          type="button"
+          onClick={onCorrigir}
+          className="rounded-md border border-devolve-border bg-devolve-bg px-2 py-1 text-xs font-medium text-devolve-text hover:bg-white"
+        >
+          Complete os ? para copiar
+        </button>
+      )}
 
       {sugestoes.length > 0 && (
         <span className="text-[11px] text-ok-text">
           {sugestoes.length === 1
-            ? '1 dígito corrigido pelo verificador'
-            : `${sugestoes.length} dígitos corrigidos pelo verificador`}
+            ? '1 número corrigido'
+            : `${sugestoes.length} números corrigidos`}
         </span>
       )}
     </div>

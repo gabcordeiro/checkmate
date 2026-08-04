@@ -12,15 +12,23 @@ Analise a imagem e devolve um item em "cheques" para CADA cheque visível. Se ho
 
 REGRAS ABSOLUTAS:
 
-1. NUNCA CHUTE UM DÍGITO. Se um dígito da tarja CMC7 (a faixa de números na base do cheque) estiver ambíguo — os pares clássicos são 3/8, 1/7, 0/6, 5/6, 2/7 — escreva no campo a leitura mais provável E registre esse dígito em "digitos_duvidosos" com TODAS as alternativas plausíveis, incluindo a que você escreveu. Um dígito chutado em silêncio custa dinheiro; um dígito marcado como duvidoso não custa nada.
+1. NUNCA CHUTE. Existem duas situações diferentes, e cada uma tem sua marca:
 
-2. CMC7 em três blocos, só dígitos, sem espaços nem símbolos:
-   - bloco1: 8 dígitos  (código do banco + agência + dígito verificador)
-   - bloco2: 12 dígitos (inclui o número do cheque + dígito verificador)
-   - bloco3: 10 dígitos (conta corrente + dígito verificador)
-   Se um bloco estiver ilegível ou cortado na foto, devolva null nesse bloco — não invente dígitos para completar o tamanho.
+   a) NÃO CONSIGO LER — o caractere está borrado, cortado, coberto ou apagado e você não faz ideia de qual é. Escreva "?" no lugar dele, dentro do próprio valor. Exemplos: "0210?7369", "quatrocentos e ? reais", "JARDIM MUL?IVARIEDADES". Um "?" por caractere ilegível. NUNCA invente um dígito para "completar".
 
-3. valor_extenso_texto é TRANSCRIÇÃO LITERAL do manuscrito. Copie exatamente como está escrito, mantendo os erros de grafia do emitente ("quatrossentos", "hum mil", "cincoenta"). NÃO normalize, NÃO corrija, NÃO converta em número. Se o emitente escreveu um valor por extenso que não combina com o valor em algarismos, é justamente isso que precisamos ver.
+   b) LI, MAS PODE SER OUTRO — você consegue ler, mas o desenho é ambíguo. Os pares clássicos são 3/8, 1/7, 0/6, 5/6, 2/7. Escreva a leitura mais provável E registre em "digitos_duvidosos" com TODAS as alternativas plausíveis, incluindo a que escreveu.
+
+   Não misture as duas: "?" é para o que você não leu; "digitos_duvidosos" é para o que você leu com dúvida.
+
+   Para os campos que não são texto (valor_numerico, data_emissao, bom_para_anotado) não dá para escrever "?": devolva null E liste o nome do campo em "nao_lidos". Atenção: null sozinho significa "não existe no cheque" (um cheque sem anotação de "bom p/", por exemplo). Só entre em "nao_lidos" o que você TENTOU ler e não conseguiu.
+
+2. CMC7 em três blocos, só dígitos e "?", sem espaços nem símbolos:
+   - bloco1: 8 caracteres  (código do banco + agência + dígito de conferência)
+   - bloco2: 12 caracteres (inclui o número do cheque + dígito de conferência)
+   - bloco3: 10 caracteres (conta corrente + dígito de conferência)
+   O tamanho tem de bater SEMPRE. Se você não lê um caractere, ponha "?" naquela posição — assim o tamanho continua certo e nós sabemos exatamente qual posição falta. Só devolva null no bloco inteiro se ele estiver totalmente ausente ou cortado da foto. Não invente dígito para completar tamanho, e não devolva bloco mais curto ou mais longo que o padrão.
+
+3. valor_extenso_texto é TRANSCRIÇÃO LITERAL do manuscrito. Copie exatamente como está escrito, mantendo os erros de grafia do emitente ("quatrossentos", "hum mil", "cincoenta"). NÃO normalize, NÃO corrija, NÃO converta em número. Cheque é escrito à mão em letra cursiva: se uma palavra do extenso estiver ilegível, ponha "?" no lugar DELA em vez de adivinhar — é melhor "quatrocentos e ? reais" do que um valor inventado, porque comparamos esse extenso com o valor em números e um chute aqui vira alarme falso. Se o emitente escreveu um valor por extenso que não combina com o valor em algarismos, é justamente isso que precisamos ver.
 
 4. valor_numerico é o valor em algarismos, como número (ex: 1842.5). Ponto como separador decimal, sem "R$", sem separador de milhar.
 
